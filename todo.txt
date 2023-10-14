@@ -1,0 +1,15 @@
+
+(1) Viewport example: divide screen into quadrants, 
+    view objects from four different cameras,
+    but OrbitControls only works from one camera (a perspective camera)
+
+(1b) Add a single draggable cube that can be triggered from any of the viewports.
+     (Might need 4 draggable objects, one for each camera.)
+
+
+
+(2) Create a triangle of dragable circles with borders (images?), change color on hover,
+    between each pair of circles is a line/rectangle(for thickness) whose position/orientation automatically updates.
+
+
+

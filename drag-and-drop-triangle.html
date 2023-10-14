@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+	<style>
+		body { margin: 0; }
+	</style>
+</head>
+
+<body>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/Stats.js"></script>
+<script src="js/DragControlsViewport.js"></script>
+
+<script>
+
+// standard scene elements
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xAACCFF );
+
+let camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.position.set(0, 5, 0);
+
+let ambientLight = new THREE.AmbientLight(0x222222, 1);
+scene.add(ambientLight);
+
+let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
+directionalLight.position.set(1, 4, 2);
+directionalLight.target.position.set(0, 0, 0);
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+
+let renderer = new THREE.WebGLRenderer( {antialias: true} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// add a stats panel (show FPS etc); remember to update
+var stats = new Stats();
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+document.body.appendChild(stats.domElement);
+
+// optional camera movement controls
+let orbitControls = new THREE.OrbitControls( camera, renderer.domElement );
+orbitControls.enabled = false; 
+ 
+// optional for window resizing
+window.addEventListener( 'resize', onWindowResize );
+
+// custom scene elements
+
+let gridSize = 10;
+let gridDivisions = 10;
+let gridCenterColor = 0x000000;
+let gridLineColor = 0x888888;
+let gridHelper = new THREE.GridHelper( gridSize, gridDivisions, gridCenterColor, gridLineColor );
+gridHelper.position.set(0, -0.01, 0);
+scene.add( gridHelper );
+ 
+let floorGeometry = new THREE.PlaneGeometry(gridSize, gridSize);
+let floorMaterial = new THREE.MeshLambertMaterial({ 
+	color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+let floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.position.y = -0.02;
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor); 
+
+
+// use for loading textures - requires server
+let loader = new THREE.TextureLoader();
+// image texturematerial requires server
+let imageTexture = loader.load( 'images/circle-border3.png' );
+// reuse basic geometry
+let quadGeo = new THREE.PlaneGeometry(1,1)
+function makeQuad()
+{
+	// need a new material for each object,
+	//   since material color change should only apply to individual instance
+	let imageMaterial = new THREE.MeshStandardMaterial({
+  		map: imageTexture, side: THREE.DoubleSide, transparent: true
+	});
+	let quad = new THREE.Mesh(quadGeo, imageMaterial);
+	quad.rotation.set(-Math.PI/2,0,0);
+	let scale = 0.25;
+	quad.scale.set(scale, scale, scale); 
+	scene.add(quad);
+	return quad;
+};
+
+let quad1 = makeQuad();
+quad1.position.set(0,0,-1); 
+let quad2 = makeQuad();
+quad2.position.set(2,0,-1); 
+let quad3 = makeQuad();
+quad3.position.set(2,0,1); 
+
+ 
+// line: a thin plane from pointA to pointB
+let linePlaneGeometry = new THREE.PlaneGeometry(1, 1);
+let lineCylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4, 1, true);  
+linePlaneGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2));
+lineCylinderGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2));
+let lineMaterial = new THREE.MeshBasicMaterial( {color: 0x8800FF, side: THREE.DoubleSide} );
+let createLineMesh = function( meshA, meshB, usePlane=true )
+{
+  let lineGeometry = (usePlane) ? linePlaneGeometry : lineCylinderGeometry;
+  lineGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4, 1, true);
+  lineGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2)); 
+  // let lineMaterial = new THREE.MeshBasicMaterial( {color: 0x8800F, side: THREE.DoubleSide} );
+  let lineMesh = new THREE.Mesh(lineGeometry, lineMaterial);
+
+  lineMesh.meshA = meshA;
+  lineMesh.meshB = meshB;
+
+  lineMesh.update = function()
+  {
+	let pointA = this.meshA.position;
+	let pointB = this.meshB.position;
+	let direction = new THREE.Vector3().subVectors( pointB, pointA );
+	// adjust line length so line does not overlap with meshes representing points
+	// for lines:
+	// this.scale.set(0.05, 1, direction.length() - 0.2, 1);  
+	// for cylinders:
+	this.scale.set(0.2, 0.2, direction.length() - 0.2);  
+	let midPoint = new THREE.Vector3().addVectors(pointA, pointB).multiplyScalar(0.5);
+	this.position.copy(midPoint);
+	this.lookAt(pointB);
+  }
+
+  lineMesh.update();
+
+  // for future updates:
+  meshA.nextLine = lineMesh;
+  meshB.prevLine = lineMesh;
+
+  // might as well add it to the scene
+  scene.add(lineMesh);
+
+  // not sure why this is returned any more
+  return lineMesh;
+} 
+
+// first mesh is previous/pointA, second mesh is next/pointB
+let line12 = createLineMesh( quad1, quad2 );
+let line23 = createLineMesh( quad2, quad3 );
+let line31 = createLineMesh( quad3, quad1 );
+
+var dragControls = new DragControls( [ quad1, quad2, quad3 ], camera, renderer.domElement );
+
+dragControls.addEventListener( 'hoveron', function (event) {
+	event.object.material.emissive.set( 0xFF8888 );  
+} );
+
+dragControls.addEventListener( 'hoveroff', function (event) { 
+	event.object.material.emissive.set( 0x000000 );
+} );
+
+dragControls.addEventListener( 'dragstart', function (event) { 
+	// orbitControls.enabled = false; 
+	event.object.material.emissive.set( 0x8822FF );
+	
+} );
+
+dragControls.addEventListener( 'drag', function (event) { 
+	if (event.object.prevLine)
+		event.object.prevLine.update();
+	if (event.object.nextLine)
+		event.object.nextLine.update();
+} );
+
+dragControls.addEventListener( 'dragend', function (event) { 
+	// orbitControls.enabled = true; 
+	event.object.material.emissive.set( 0x000000 );
+} );
+
+function update()
+{
+	stats.update();
+
+	// cube.rotation.x += 0.01;
+	// cube.rotation.y += 0.01;
+
+}
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+function onWindowResize()
+{ 
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>

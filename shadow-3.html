@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+	<style>
+		body { margin: 0; }
+	</style>
+</head>
+
+<body>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/Stats.js"></script>
+
+<script>
+
+// standard scene elements
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xAACCFF );
+
+let camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.position.set(5,3,5);
+
+let ambientLight = new THREE.AmbientLight(0x222222, 1);
+scene.add(ambientLight);
+
+let d = 2.5;
+let dirLight1 = new THREE.DirectionalLight(0x4444FF, 1);
+dirLight1.position.set(d, d, 5);
+dirLight1.target.position.set(d, d, 0);
+dirLight1.castShadow = true;
+dirLight1.shadow.mapSize = new THREE.Vector2(2048, 2048);
+scene.add(dirLight1);
+scene.add(dirLight1.target);
+let helper1 = new THREE.DirectionalLightHelper(dirLight1);
+scene.add(helper1);
+
+let dirLight2 = new THREE.DirectionalLight(0xFF4444, 1);
+dirLight2.position.set(5, d, d);
+dirLight2.target.position.set(0, d, d);
+dirLight2.castShadow = true;
+dirLight2.shadow.mapSize = new THREE.Vector2(2048, 2048);
+scene.add(dirLight2);
+scene.add(dirLight2.target);
+let helper2 = new THREE.DirectionalLightHelper(dirLight2);
+scene.add(helper2);
+
+let dirLight3 = new THREE.DirectionalLight(0x44FF44, 1);
+dirLight3.position.set(d, 5, d);
+dirLight3.target.position.set(d, 0, d);
+dirLight3.castShadow = true;
+dirLight3.shadow.mapSize = new THREE.Vector2(2048, 2048);
+scene.add(dirLight3);
+scene.add(dirLight3.target);
+let helper3 = new THREE.DirectionalLightHelper(dirLight3);
+scene.add(helper3);
+
+let renderer = new THREE.WebGLRenderer( {antialias: true} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild( renderer.domElement );
+
+var stats = new Stats();
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+document.body.appendChild(stats.domElement);
+
+let controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+window.addEventListener( 'resize', onWindowResize );
+
+// custom scene elements
+
+const axesHelper = new THREE.AxesHelper( 5 );
+scene.add( axesHelper );
+
+let gridSize = 10;
+let gridDivisions = 10;
+let gridCenterColor = 0xFF0000;
+let gridLineColor = 0x000000;
+let gridHelper = new THREE.GridHelper( gridSize, gridDivisions, gridCenterColor, gridLineColor );
+// scene.add( gridHelper );
+
+let floorGeometry = new THREE.PlaneGeometry(gridSize, gridSize);
+let floorMaterial = new THREE.MeshLambertMaterial({ 
+	color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+let floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+// shadow code
+floor.receiveShadow = true;
+
+// cone parameters: radius, height, segments (~32 for circle)
+let geometry = new THREE.ConeGeometry( 0.5, 1, 32 );
+let material = new THREE.MeshLambertMaterial( { color: 0x888888 } );
+let mesh = new THREE.Mesh( geometry, material );
+// position refers to center
+mesh.position.set(2, 1, 2);
+mesh.castShadow = true;
+scene.add( mesh );
+
+let wallGeoX = new THREE.PlaneGeometry(5,5);
+let wallX = new THREE.Mesh( wallGeoX, floorMaterial );
+wallX.position.set(2.5, 2.5, 0);
+wallX.receiveShadow = true;
+scene.add(wallX);
+
+let wallGeoZ = new THREE.PlaneGeometry(5,5);
+let wallZ = new THREE.Mesh( wallGeoZ, floorMaterial );
+wallZ.position.set(0, 2.5, 2.5);
+wallZ.rotation.y = Math.PI/2;
+wallZ.receiveShadow = true;
+scene.add(wallZ);
+
+function update()
+{
+	stats.update();
+
+	mesh.rotation.x += 0.011;
+	mesh.rotation.y += 0.013;
+	mesh.rotation.z += 0.017;
+}
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+function onWindowResize()
+{
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>

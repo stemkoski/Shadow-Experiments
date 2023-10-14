@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Shadow Experiments</title>
+	<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+
+<div class="title">Shadow Experiments</div>
+
+<p>This website contains a collection of examples building up to interactive 3D applications involving shadows.</p>
+
+<br>
+
+<ul>
+  <li>
+    <p><a href="basic.html">Basic HTML</a></p>
+    <p>Examples of basic HTML elements, scripting, interaction with elements on page.</p>
+  </li>
+  <li>
+    <p><a href="example.html">Basic Three.js Scene</a></p>
+    <p>Example 3D scene created with the three.js library;
+       includes shadow casting and wireframe helper objects
+       to illustrate direction and range of shadows. 
+       <br><br>
+       This and the following examples use OrbitControls 
+       to control the camera: 
+       <ul>
+       <li>hold left mouse button and drag to rotate scene around center</li>
+       <li>use mouse wheel to zoom in and out on scene center</li>
+       <li>hold right mouse button and drag to translate camera horizontally</li></p>
+       </ul>
+  </li>
+  <li>
+    <p><a href="shadow-3.html">Orthogonal Shadows</a></p>
+    <p>A scene with three orthogonal directional lights casting shadows of a rotating cone.</p>
+  </li>
+  <li>
+    <p><a href="csg1.html">Constructive Solid Geometry</a></p>
+    <p>Example of Constructive Solid Geometry (CSG) calculations, 
+       using the libraries <a href="https://evanw.github.io/csg.js/">CSG.js</a>
+       and <a href="https://github.com/manthrax/THREE-CSGMesh">THREE-CSGMesh</a>. 
+       Displays meshes 
+       that are the union, intersection, or difference of two other meshes 
+       (a sphere and a cube in this example).</p>
+  </li>
+  <li>
+    <p><a href="csg2.html">CSG + Translucent Overlays</a></p>
+    <p>The intersection of two hollow cylinders; original cylinders are rendered as translucent objects.</p>
+  </li>
+  <li>
+    <p><a href="csg3.html">CSG + Wireframe Overlays</a></p>
+    <p>The intersection of two hollow frustums; original frustums are rendered as wireframe objects.</p>
+  </li>
+  <li>
+    <p><a href="text.html">3D Text</a></p>
+    <p>Creating three-dimensional text meshes.</p>
+  </li>
+  <li>
+    <p><a href="shape.html">Shapes and Extrusions</a></p>
+    <p>Creating shapes (specified by points/lines/curves), 
+       extruding the shapes to make 3D objects,
+       and normalizing each shape to fit exactly in a unit box.
+    </p>
+  </li>
+  <li>
+    <p><a href="supershape.html">Many Shapes</a></p>
+    <p>A combination of 3D text and extruded shapes, 
+      all normalized to fit exactly in a unit box.
+    </p>
+  </li>
+  <li>
+    <p><a href="text-csg.html">CSG + Text Meshes</a></p>
+    <p>Three text meshes are rotated to orthogonal directions,
+       then intersected to create a mesh.
+    </p>
+  </li>
+  <li>
+    <p><a href="shadow-csg.html">CSG + Shadows</a></p>
+    <p>A combination of the shape, CSG, and shadow examples above.
+      This demo creates the intersection of meshes constructed from shapes
+      extruded along perpendicular directions, and shadows are projection along
+      the three perpendicular directions.
+      URL supports parameter input to select three different shapes
+      and an optional rotation speed. For example:
+      <ul>
+        <li><a href="shadow-csg.html?x=Square&y=Triangle&z=Circle&speed=0.00">Square, Triangle, Circle (not rotating)</a></li>
+        <li><a href="shadow-csg.html?x=Circle&y=Star5&z=Square&speed=0.01">Circle, 5-point Star, Square (rotating)</a></li>
+        <li><a href="shadow-csg.html?x=Smile&y=Z&z=Circle&speed=0.01">Smile, Z, Circle (rotating)</a></li>
+        <li><a href="shadow-csg.html?x=Smile&y=Frown&z=Square&speed=0.02">Smile, Frown, Square (rotating)</a></li>
+        <li><a href="shadow-csg.html?x=Circle&y=Square&z=Star6&speed=0.01">Circle, Square, 6-point Star (rotating)</a></li>
+        <li><a href="shadow-csg.html?x=Triangle&y=Hexagon&z=Square&speed=0.01">Triangle, Hexagon, Square (rotating)</a></li>
+      </ul>
+      <br>Note that some combinations of shapes result in additional truncation and so shadow projections
+      may not appear as expected.
+    </p>
+  </li>
+  <li>
+    <p><a href="transform.html">Transform Controls</a></p>
+    <p>Transformation controls, 
+      similar to those found in digital content creation (DCC) tools such as Blender,
+      applied to a mesh. See the official
+      <a href="https://threejs.org/docs/#examples/en/controls/TransformControls">documentation</a>
+      and <a href="https://threejs.org/examples/#misc_controls_transform">example</a> for additional details.
+    </p>
+  </li>
+  <li>
+    <p><a href="drag-and-drop.html">Drag and Drop Controls</a></p>
+    <p>Simple Drag-and-Drop controls applied to a mesh. 
+      The dragged object moves in a plane perpendicular to the forward direction of the camera.
+    </p>
+  </li>
+  <li>
+    <p><a href="viewports.html">Viewports</a></p>
+    <p>Four views of a scene - top, front, right, and diagonal - 
+      rendered at the same time, using perspective cameras.
+      <br> (Similar to the "quad view" in Blender.)
+    </p>
+  </li>
+  <li>
+    <p><a href="viewports-2.html">Viewports - Orthogonal</a></p>
+    <p>Four views of a scene. Each quadrant includes a text label.
+       The top, front, and right views are rendered with 
+       orthographic cameras, and code guarantees a square aspect ratio is preserved
+       when the window is resized. 
+       OrbitControls are active for the perspective view and are enabled only when the mouse pointer
+       is dragged within the corresponding quadrant of the scene.
+      <br> (Even more similar to the "quad view" in Blender.)
+    </p>
+  </li>
+  <li>
+    <p><a href="viewports-drag.html">Viewports + Drag-and-Drop</a></p>
+    <p>Four views of a scene, combined with a draggable sphere. 
+       Drag controls plugin modified to work correctly with viewports. 
+       Multiple drag controls required: one for each of the orthographic views,
+        where dragging is enabled.
+    </p>
+  </li>
+  <li>
+    <p><a href="drag-and-drop-triangle.html">Drag and Drop Triangle</a></p>
+    <p>Drag-and-Drop controls applied to three vertices of a triangle. 
+      Lines connecting the vertices are automatically updated.
+    </p>
+  </li>
+</ul>
+
+<!--
+
+Additional items:
+
+<li>
+  <p><a href="link.html">Page Title</a></p>
+  <p>Page description.</p>
+</li>
+
+-->
+
+<br>
+
+<hr>
+
+</body>
+</html>

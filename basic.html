@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Basic HTML</title>
+</head>
+
+<style>
+/*  
+    A style tag contains CSS formatting instructions.
+    This is a CSS style comment. 
+*/
+
+/* 
+    Below: the dot followed by the word means that this formatting will be applied to any tag with a "class" attribute set to the word.
+*/
+.awesome
+{
+   border: 1px solid black;
+   padding: 8px;
+   font-family: Arial;
+   font-size: 16px;
+   color: red;
+}
+
+/* 
+    To change style/formatting in the entire document, use a "body" tag like so:
+
+    body
+    {
+        ...format commands go here...
+    }
+
+*/
+
+</style>
+<body>
+
+<h1>Large Header Text</h1>
+
+<hr>
+
+<p> Paragraph text, including <b>bold</b>, <i>italic</i>, and <u>underline</u> text. After the paragraph, a line break is automatically inserted. 
+
+
+(Otherwise, whitespace      is                ignored.)</p>
+
+<p> This is a second paragraph, including a link to <a href="http://www.google.com">Google</a>. </p>
+
+<!--  This is an HTML style comment.  -->
+
+<p> HTML comments and Javascript code do not appear on the webpage. </p>
+
+<div> Here is some text written within "div" tags. It functions like a container or box; it does not include an extra line break at the end, like "p" tags do. </div>
+
+<div>So the "p" tag is still useful!</div>
+
+<div class="awesome">Styling can be applied to text in a div using CSS; the name corresponding to the formatting block is specified by the "class" attribute, specified within the "div" tag.</div>
+
+<p>Also, the "span" tag works like the "div" tag,
+<span class="awesome">but without the line breaks</span>, 
+so you can apply CSS formatting within a line.</p>
+
+<!-- Note that no text is written in the following div... yet -->
+<div id="special"></div>
+
+<!-- Anything within script tags (such as below) is interpreted as Javascript code. -->
+
+<script>
+
+// This is a single-line Javascript style comment.
+
+/*
+    This is a multi-line Javascript style comment.
+    It can be useful for longer explanations
+    or to comment out multiple lines of code simultaneously.
+*/
+
+let x = 4;
+let y = x + 1;
+
+/*
+    Below is a Javascript "print" style statement; it appears in the Javascript console, which can be opened from in the "Developer Tools" section -- see the web browser application menu.
+*/
+console.log( y );
+
+// to access and change text content appearing on the webpage itself (not just through the Javascript console):
+
+// first, assign the HTML element to a Javascript variable;
+// (the HTML element must have an "id" attribute specified")
+let theDiv = document.getElementById("special");
+
+// to set text, use equals:
+theDiv.innerText = " Text can be added to a webpage via Javascript. ";
+
+// to append text, use plus-equals:
+theDiv.innerText += " Have a nice day! "
+
+</script>
+
+<p> The end. </p>
+
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+<style>
+body 
+{ 
+	margin: 0; 
+	background-color: #000088;
+}
+
+.labelDiv
+{
+	position: absolute;
+
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 24px;
+	font-weight: bold;
+	color: #FFFFFF;
+	-webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: black;
+
+	/* centers the div itself at position */
+	transform: translate(-50%, -100%);	
+	/* stops user from selecting text */
+	user-select: none; 
+	/* prevents pointer events, so divs behind it are clickable. */
+	pointer-events: none; 
+}
+</style>
+</head>
+
+<body>
+ 
+<div class="labelDiv" style="left:25%; top:50%">Top&nbsp;View</button></div>
+<div class="labelDiv" style="left:25%; top:99%">Front&nbsp;View</button></div>
+<div class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
+<div class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/Stats.js"></script>
+
+<script>
+
+// standard scene elements
+
+let renderer = new THREE.WebGLRenderer( {antialias: true, autoClear:false} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xAACCFF );
+
+// bottom left, bottom right, top left, top right
+let viewportDataArray = [
+{
+	left: 0, bottom: 0,	width: 0.5, height: 0.5,
+	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	// ortho camera params: left right top bottom near far
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )},
+{
+	left: 0.5, bottom: 0, width: 0.5, height: 0.5,
+	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+},
+{
+	left: 0, bottom: 0.5, width: 0.5, height: 0.5,
+	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+},
+{
+	left: 0.5, bottom: 0.5, width: 0.5, height: 0.5,
+	camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+}
+]
+
+// arrange cameras in Blender quad view style
+
+// bottom left = FRONT VIEW  
+viewportDataArray[0].camera.position.set(0, 0, 5);
+viewportDataArray[0].camera.lookAt(0, 0, 0);
+
+// bottom right = RIGHT VIEW
+viewportDataArray[1].camera.position.set(5, 0, 0);
+viewportDataArray[1].camera.lookAt(0, 0, 0);
+
+// top left = TOP VIEW 
+viewportDataArray[2].camera.position.set(0, 5, 0);
+viewportDataArray[2].camera.lookAt(0, 0, 0);
+
+// top right = PERSPECTIVE VIEW
+viewportDataArray[3].camera.position.set(2, 2, 2);
+viewportDataArray[3].camera.lookAt(0, 0, 0);
+
+let windowWidth, windowHeight;
+// assign correct initial values
+onWindowResize();
+
+// optional camera movement controls
+let orbitControls = new THREE.OrbitControls( viewportDataArray[3].camera, renderer.domElement );
+/* TODO: on mouse move, 
+   if not in top-right quadrant, disable orbit controls */
+ 
+/* 
+    "mousedown" event doesn't work quite right; 
+	click and drag on non-orbit-control window
+    "builds up" somehow and releases when returning
+	to orbit controls
+*/
+document.addEventListener("mousemove", function(event) {
+	if (event.pageX > window.innerWidth/2 && 
+	    event.pageY < window.innerHeight/2 )
+	{
+		orbitControls.enabled = true; 
+	}
+	else
+	{
+		orbitControls.enabled = false;
+	}
+});
+
+let ambientLight = new THREE.AmbientLight(0x222222, 1);
+scene.add(ambientLight);
+
+let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
+directionalLight.position.set(1, 4, 2);
+directionalLight.target.position.set(0, 0, 0);
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+
+// add a stats panel (show FPS etc); remember to update
+var stats = new Stats();
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+document.body.appendChild(stats.domElement);
+
+
+// optional for window resizing
+window.addEventListener( 'resize', onWindowResize );
+
+// custom scene elements
+
+/*
+// use for loading textures - requires server
+let loader = new THREE.TextureLoader();
+// image texture applied to ground
+let floorSize = 40; 
+let floorTexture = loader.load( 'images/checkerboard.jpg' );
+floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+floorTexture.repeat.set( floorSize / 4, floorSize / 4 );
+let floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
+let floorMaterial = new THREE.MeshBasicMaterial({
+  map: floorTexture,
+  side: THREE.DoubleSide,
+});
+let floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+*/
+
+let gridSize = 10;
+let gridDivisions = 10;
+let gridCenterColor = 0x000000;
+let gridLineColor = 0x888888;
+let gridHelper = new THREE.GridHelper( gridSize, gridDivisions, gridCenterColor, gridLineColor );
+scene.add( gridHelper );
+
+let floorGeometry = new THREE.PlaneGeometry(gridSize, gridSize);
+let floorMaterial = new THREE.MeshLambertMaterial({ 
+	color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+let floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// let geometry = new THREE.BoxGeometry( 1, 1, 1 );
+let geometry = new THREE.TorusKnotGeometry(1, 0.3, 128, 32);
+let material = new THREE.MeshLambertMaterial( { color: 0xCC88FF } );
+let cube = new THREE.Mesh( geometry, material );
+cube.position.set(0, 0, 0);
+cube.scale.set(0.5, 0.5, 0.5);
+scene.add( cube );
+
+let axesHelper = new THREE.AxesHelper( 5 );
+axesHelper.position.set(0,0.01,0);
+scene.add( axesHelper );
+
+function update()
+{
+	stats.update();
+
+	// cube.rotation.x += 0.01;
+	// cube.rotation.y += 0.011;
+
+}
+
+function render()
+{
+	for (let i = 0; i < viewportDataArray.length; i++)
+	{
+		const view = viewportDataArray[i];
+		const camera = view.camera;
+		const left = Math.floor( windowWidth * view.left ) + 2;
+		const bottom = Math.floor( windowHeight * view.bottom ) + 2;
+		const width = Math.floor( windowWidth * view.width ) - 4;
+		const height = Math.floor( windowHeight * view.height ) - 4;
+
+		renderer.setViewport( left, bottom, width, height );
+		renderer.setScissor( left, bottom, width, height );
+		renderer.setScissorTest( true );
+		
+		//renderer.setClearColor( 0xFF0000 ); // border color
+		//renderer.clearColor(); // clear color buffer
+		
+		// does not exist
+		// renderer.setClearColor( view.background );
+
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
+
+		renderer.render( scene, camera );
+
+	}
+	// renderer.render( scene, camera );
+}
+
+function onWindowResize()
+{
+	if ( windowWidth != window.innerWidth || windowHeight != window.innerHeight ) 
+	{
+		windowWidth = window.innerWidth;
+		windowHeight = window.innerHeight;
+		renderer.setSize( windowWidth, windowHeight );
+
+		// force orthographic projections to keep square aspect ratio
+		//   and also contain a radius 1 square (at a minimum)
+		const aspectRatio = windowHeight/windowWidth;
+		for (let i = 0; i < 3; i++)
+		{
+			let camera = viewportDataArray[i].camera;
+			if (aspectRatio > 1)
+			{
+				camera.left = -1;
+				camera.right = 1;
+				camera.top = aspectRatio;
+				camera.bottom = -aspectRatio;
+				camera.updateProjectionMatrix();
+			}
+			else // (aspectRatio <= 1)
+			{
+				camera.left = -1/aspectRatio;
+				camera.right = 1/aspectRatio;
+				camera.top = 1;
+				camera.bottom = -1;
+				camera.updateProjectionMatrix();
+			}
+		}
+		// viewportDataArray[1].camera.
+	}
+
+	// camera.aspect = window.innerWidth / window.innerHeight;
+	// camera.updateProjectionMatrix();
+	// renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>
