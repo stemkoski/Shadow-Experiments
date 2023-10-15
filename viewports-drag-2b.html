@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+<style>
+body 
+{ 
+	margin: 0; 
+	background-color: #000000;
+}
+
+.labelDiv
+{
+	position: absolute;
+
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 32px;
+	font-weight: bold;
+	color: #FFFFFF;
+	-webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: black;	
+	
+	/* offset-x | offset-y | blur-radius | color */
+	text-shadow: 0px 0px 2px black; 
+
+	/* centers the div itself at position */
+	transform: translate(-50%, -100%);	
+	/* stops user from selecting text */
+	user-select: none; 
+	/* prevents pointer events, so divs behind it are clickable. */
+	pointer-events: none; 
+}
+</style>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/Stats.js"></script>
+<script src="js/DragControlsViewport.js"></script>
+
+</head>
+
+<body>
+ 
+<div class="labelDiv" style="left:25%; top:50%">Top&nbsp;View</button></div>
+<div class="labelDiv" style="left:25%; top:99%">Front&nbsp;View</button></div>
+<div class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
+<div class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
+
+
+
+<script>
+
+// standard scene elements
+let renderer = new THREE.WebGLRenderer( {antialias: true, autoClear:false} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xf8f0ff ); 
+
+// lights
+let ambientLight = new THREE.AmbientLight(0x444444, 1);
+scene.add(ambientLight);
+
+let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
+directionalLight.position.set(2, 4, 2);
+directionalLight.target.position.set(0, 0, 0);
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+// use for loading textures - requires server
+let loader = new THREE.TextureLoader();
+
+// use for animation effects
+let clock = new THREE.Clock();
+
+// add a stats panel (show FPS etc); remember to update
+var stats = new Stats();
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+// document.body.appendChild(stats.domElement)
+
+// needed for window resizing
+let windowWidth = 800, windowHeight = 600;
+let viewportDataArray = [];
+window.addEventListener( 'resize', onWindowResize );
+
+
+function viewportSetup()
+{
+	// window region order: bottom left, bottom right, top left, top right
+	// initial set orthographic camera radius doesn't really matter
+	//   since it is immediately recalculated by the window resize function
+	// scene views: FRONT, RIGHT, TOP, PERSPECTIVE
+	viewportDataArray = [
+	{
+		left: 0, bottom: 0,	width: 0.5, height: 0.5,
+	    camera: new THREE.PerspectiveCamera(30 , window.innerWidth / window.innerHeight, 0.1, 1000 )
+		// ortho camera params: left right top bottom near far
+		// camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+	},
+	{
+		left: 0.5, bottom: 0, width: 0.5, height: 0.5,
+		camera: new THREE.PerspectiveCamera( 30 , window.innerWidth / window.innerHeight, 0.1, 1000 )
+		//camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+	},
+	{
+		left: 0, bottom: 0.5, width: 0.5, height: 0.5,
+		camera: new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 )
+		// camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+	},
+	{
+		left: 0.5, bottom: 0.5, width: 0.5, height: 0.5,
+		camera: new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	}
+	]
+
+	// arrange cameras in Blender quad view style
+
+	// bottom left = FRONT VIEW  
+	viewportDataArray[0].camera.position.set(2, 2, 8);
+	viewportDataArray[0].camera.lookAt(2, 2, 0);
+
+	// bottom right = RIGHT VIEW
+	viewportDataArray[1].camera.position.set(8, 2, 2);
+	viewportDataArray[1].camera.lookAt(0, 2, 2);   
+
+	// top left = TOP VIEW 
+	viewportDataArray[2].camera.position.set(2, 8, 2);
+	viewportDataArray[2].camera.lookAt(2, 0, 2); 
+
+	// top right = PERSPECTIVE VIEW
+	viewportDataArray[3].camera.position.set(6,3,6);
+	viewportDataArray[3].camera.lookAt(0, 0, 0);
+
+
+	// assign correct initial values
+	onWindowResize();
+}
+
+viewportSetup();
+
+// optional camera movement controls
+let orbitControls = new THREE.OrbitControls( viewportDataArray[3].camera, renderer.domElement );
+
+// set up draggable object
+
+// image texturematerial requires server
+let imageTexture = loader.load( 'images/color-grid.png' );
+
+let geo1 = new THREE.SphereGeometry( 0.25 ); 
+let mesh1 = new THREE.Mesh( geo1, 
+	new THREE.MeshLambertMaterial( { color: 0xFFFFFF, map: imageTexture } ) ); 
+mesh1.position.set(2, 1, 3);
+scene.add( mesh1 );
+  
+let dragControlsTop = new DragControls( 
+	[ mesh1 ], viewportDataArray[2].camera, renderer.domElement,
+	-1, 0, +1, 0 );
+
+let dragControlsFront = new DragControls( 
+	[ mesh1 ], viewportDataArray[0].camera, renderer.domElement,
+	-1, 0, 0, -1 );
+   
+let dragControlsRight = new DragControls( 
+	[ mesh1 ], viewportDataArray[1].camera, renderer.domElement,
+	0, +1, 0, -1 );
+ 
+/* 
+    "mousedown" event doesn't work quite right; 
+	click and drag on non-orbit-control window
+    "builds up" somehow and releases when returning
+	to orbit controls
+*/
+document.addEventListener("mousemove", function(event) {
+	// top-right window quadrant: scene perspective view
+	if (event.pageX > window.innerWidth/2 && event.pageY < window.innerHeight/2 )
+	{
+		orbitControls.enabled = true; 
+		dragControlsTop.enabled = false;
+		dragControlsFront.enabled = false;
+		dragControlsRight.enabled = false;
+	}
+	// top left window quadrant: scene top view
+	else if (event.pageX < window.innerWidth/2 && event.pageY < window.innerHeight/2 )
+	{
+		orbitControls.enabled = false;
+		dragControlsTop.enabled = true;
+		dragControlsFront.enabled = false;
+		dragControlsRight.enabled = false;
+	}
+	// bottom left window quadrant: scene front view
+	else if (event.pageX < window.innerWidth/2 && event.pageY > window.innerHeight/2 )
+	{
+		orbitControls.enabled = false;
+		dragControlsTop.enabled = false;
+		dragControlsFront.enabled = true;
+		dragControlsRight.enabled = false;
+	}
+	// bottom right window quadrant: scene right view
+	else if (event.pageX > window.innerWidth/2 && event.pageY > window.innerHeight/2 )
+	{
+		orbitControls.enabled = false;
+		dragControlsTop.enabled = false;
+		dragControlsFront.enabled = false;
+		dragControlsRight.enabled = true; 
+	}
+});
+
+
+
+// sample object
+ 
+let imageTexture2 = loader.load("images/gradient-rainbow-2.png"); 
+imageTexture2.wrapS = THREE.RepeatWrapping;
+imageTexture2.wrapT = THREE.RepeatWrapping;
+
+// rainbow: 10, 1
+// border/grid: 40/6
+imageTexture2.repeat.set( 10, 6 ); 
+let geo2 = new THREE.TorusKnotGeometry(1, 0.3, 128, 32);
+// let material = new THREE.MeshLambertMaterial( { color: 0xCC88FF } );
+let material = new THREE.MeshStandardMaterial( { map: imageTexture2, transparent:false, opacity:0.8 } );
+let mesh2 = new THREE.Mesh( geo2, material );
+mesh2.position.set(2, 2, 2);
+let scale = 0.25;
+mesh2.scale.set(scale, scale, scale);
+scene.add( mesh2 );
+
+
+
+let createCylinderMesh = function( pointA, pointB, radius, color )
+{
+	// radius top, radius bottom, height, radialSegments, heightSegments, open
+	let lineGeometry = new THREE.CylinderGeometry(1,1, 1, 8, 1, false);
+	lineGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2)); 
+	let lineMaterial = new THREE.MeshLambertMaterial( {color: color, side: THREE.DoubleSide} );
+	let lineMesh = new THREE.Mesh(lineGeometry, lineMaterial);
+   
+	let direction = new THREE.Vector3().subVectors( pointB, pointA );
+	lineMesh.scale.set( radius, radius, direction.length() );  
+	let midPoint = new THREE.Vector3().addVectors(pointA, pointB).multiplyScalar(0.5);
+	lineMesh.position.copy(midPoint);
+	lineMesh.lookAt(pointB);
+
+	scene.add(lineMesh);
+} 
+
+
+
+function backgroundSetup() 
+{ 
+	let skyTexture = loader.load('images/hills.jpg');
+	let sky = new THREE.Mesh(
+		new THREE.SphereGeometry(10), 
+
+		new THREE.MeshBasicMaterial({map: skyTexture, side:THREE.DoubleSide})
+	);
+
+	scene.add( sky );
+
+	// axes
+	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(5,0,0), 0.1, 0xFF0000);
+	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(0,5,0), 0.1, 0x008800);
+	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,5), 0.1, 0x0000FF);
+	
+	// origin
+	scene.add( new THREE.Mesh(
+		new THREE.SphereGeometry(0.25), 
+		new THREE.MeshBasicMaterial({color:0x000000}) )
+	);
+ 
+	let floorGridHelper = new THREE.GridHelper( 40, 40, 0x888888, 0x888888 );
+	floorGridHelper.position.y = -0.01;
+	scene.add( floorGridHelper );
+
+	let xPerpWall = new THREE.Mesh( 
+		new THREE.PlaneGeometry(4,4), 
+		new THREE.MeshBasicMaterial({color:0xFFDDDD, transparent:true, opacity:0.5}) );
+	xPerpWall.rotation.y = Math.PI/2;
+	xPerpWall.position.set(0, 2, 2);
+	scene.add( xPerpWall );
+	let xPerpGrid = new THREE.GridHelper( 4, 4, 0x880000, 0x880000 );
+	xPerpGrid.rotation.z = Math.PI/2;
+	xPerpGrid.position.set(0, 2, 2);
+	scene.add( xPerpGrid );
+
+	let yPerpWall = new THREE.Mesh( 
+		new THREE.PlaneGeometry(4,4), 
+		new THREE.MeshBasicMaterial({color:0xDDFFDD, transparent:true, opacity:0.5}) );
+	yPerpWall.position.set(2, 0, 2);
+	yPerpWall.rotation.x = -Math.PI/2;
+	scene.add( yPerpWall );
+	let yPerpGrid = new THREE.GridHelper( 4, 4, 0x008800, 0x008800 );
+	//yPerpGrid.rotation.x = Math.PI/2;
+	yPerpGrid.position.set(2, 0, 2); 
+	scene.add( yPerpGrid );
+
+	let zPerpWall = new THREE.Mesh( 
+		new THREE.PlaneGeometry(4,4), 
+		new THREE.MeshBasicMaterial({color:0xDDDDFF, transparent:true, opacity:0.5}) );
+	zPerpWall.position.set(2, 2, 0);
+	scene.add( zPerpWall );
+	let zPerpGrid = new THREE.GridHelper( 4, 4, 0x000088, 0x000088 );
+	zPerpGrid.rotation.x = Math.PI/2;
+	zPerpGrid.position.set(2, 2, 0);
+	scene.add( zPerpGrid );
+}
+
+backgroundSetup();
+
+function update()
+{
+	stats.update();
+
+	imageTexture2.offset.x += 0.005;
+
+	let time = clock.getElapsedTime();
+	let scale = 0.25 + 0.02  * Math.abs(Math.sin(2 * time));
+	mesh2.scale.set(scale, scale, scale);
+	// cube.rotation.x += 0.01;
+	mesh2.rotation.y += 0.002;
+
+}
+
+function render()
+{
+	for (let i = 0; i < viewportDataArray.length; i++)
+	{
+		const view = viewportDataArray[i];
+		const camera = view.camera;
+		const left = Math.floor( windowWidth * view.left ) + 1;
+		const bottom = Math.floor( windowHeight * view.bottom ) + 1;
+		const width = Math.floor( windowWidth * view.width ) - 2;
+		const height = Math.floor( windowHeight * view.height ) - 2;
+
+		renderer.setViewport( left, bottom, width, height );
+		renderer.setScissor( left, bottom, width, height );
+		renderer.setScissorTest( true );
+		
+		//renderer.setClearColor( 0xFF0000 ); // border color
+		//renderer.clearColor(); // clear color buffer
+		
+		// does not exist
+		// renderer.setClearColor( view.background );
+
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
+
+		renderer.render( scene, camera );
+
+	}
+}
+
+function onWindowResize()
+{
+	if ( windowWidth != window.innerWidth || windowHeight != window.innerHeight ) 
+	{
+		windowWidth = window.innerWidth;
+		windowHeight = window.innerHeight;
+		renderer.setSize( windowWidth, windowHeight );
+
+		// force orthographic projections to keep square aspect ratio
+		//   and also contain a radius = "cameraRadius" square (at a minimum)
+		const aspectRatio = windowHeight/windowWidth;
+		const cameraRadius = 2;
+		for (let i = 0; i < 3; i++)
+		{
+			let camera = viewportDataArray[i].camera;
+			if (aspectRatio > 1)
+			{
+				camera.left = -cameraRadius;
+				camera.right = cameraRadius;
+				camera.top = aspectRatio * cameraRadius;
+				camera.bottom = -aspectRatio * cameraRadius;
+				camera.updateProjectionMatrix();
+			}
+			else // (aspectRatio <= 1)
+			{
+				camera.left = -cameraRadius / aspectRatio;
+				camera.right = cameraRadius / aspectRatio;
+				camera.top = cameraRadius;
+				camera.bottom = -cameraRadius;
+				camera.updateProjectionMatrix();
+			}
+		}
+		// viewportDataArray[1].camera.
+	}
+
+	// camera.aspect = window.innerWidth / window.innerHeight;
+	// camera.updateProjectionMatrix();
+	// renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>
