@@ -1,0 +1,36 @@
+<html>
+
+<head>
+	<title>GamepadJS</title>
+	<meta charset="UTF-8">
+	<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+    <script src="js/gamepad.js"></script>
+</head>
+
+<body>
+
+<hr>
+
+<div id="gamepad-data" style="border: 4px solid blue">
+Press a button on your gamepad to display data.<br></div>
+
+<hr>
+
+<script>
+
+function loop()
+{
+	if (gamepad != null)
+	{
+		gamepad.update();
+		gamepad.printFormattedData("gamepad-data");
+	}
+
+	requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+</body>
+</html>
