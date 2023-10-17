@@ -17,14 +17,14 @@ body
 	position: absolute;
 
 	font-family: Helvetica, Arial, sans-serif;
-	font-size: 32px;
+	font-size: 36px;
 	font-weight: bold;
 	color: #FFFFFF;
-	-webkit-text-stroke-width: 1px;
+	-webkit-text-stroke-width: 2px;
     -webkit-text-stroke-color: black;	
 	
 	/* offset-x | offset-y | blur-radius | color */
-	text-shadow: 0px 0px 2px black; 
+	text-shadow: 0px 0px 4px black; 
 
 	/* centers the div itself at position */
 	transform: translate(-50%, -100%);	
@@ -33,21 +33,28 @@ body
 	/* prevents pointer events, so divs behind it are clickable. */
 	pointer-events: none; 
 }
+
+.highlight
+{
+    color: #FFFF00 !important;
+}
+
 </style>
 
 <script src="js/three.js"></script>
 <script src="js/OrbitControls.js"></script>
 <script src="js/Stats.js"></script>
 <script src="js/DragControlsViewport.js"></script>
+<script src="js/gamepad.js"></script>
 
 </head>
 
 <body>
  
-<div class="labelDiv" style="left:25%; top:50%">Top&nbsp;View</button></div>
-<div class="labelDiv" style="left:25%; top:99%">Front&nbsp;View</button></div>
-<div class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
-<div class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
+<div id="topLabel" class="labelDiv" style="left:25%; top:50%">Top&nbsp;View</button></div>
+<div id="frontLabel" class="labelDiv" style="left:25%; top:99%">Front&nbsp;View</button></div>
+<div id="rightLabel" class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
+<div id="perspectiveLabel" class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
 
 
 
@@ -80,7 +87,7 @@ let clock = new THREE.Clock();
 // add a stats panel (show FPS etc); remember to update
 var stats = new Stats();
 stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
-// document.body.appendChild(stats.domElement)
+document.body.appendChild(stats.domElement)
 
 // needed for window resizing
 let windowWidth = 800, windowHeight = 600;
@@ -311,17 +318,81 @@ function backgroundSetup()
 
 backgroundSetup();
 
+var activeViewIndex = null;
+
 function update()
 {
 	stats.update();
 
 	imageTexture2.offset.x += 0.005;
 
-	let time = clock.getElapsedTime();
+	let deltaTime = clock.getDelta();
+	let time = clock.elapsedTime;
 	let scale = 0.25 + 0.02  * Math.abs(Math.sin(2 * time));
 	mesh2.scale.set(scale, scale, scale);
 	// cube.rotation.x += 0.01;
 	mesh2.rotation.y += 0.002;
+
+	if (gamepad)
+	{
+		gamepad.update();
+		if (true)
+		{
+			if (activeViewIndex == null) 
+			{
+				activeViewIndex = 0;
+				document.getElementById("topLabel").classList.add("highlight");
+				console.log("ASDF")
+			} 
+
+			if (gamepad.isButtonPressed("Select")) 
+			{
+				console.log("select" + activeViewIndex)
+				document.getElementById("topLabel").classList.remove("highlight");
+				document.getElementById("frontLabel").classList.remove("highlight");
+				document.getElementById("rightLabel").classList.remove("highlight");
+				activeViewIndex = (activeViewIndex + 1) % 3;
+				if (activeViewIndex == 0)
+				{
+					// TOP VIEW
+					document.getElementById("topLabel").classList.add("highlight");
+				}
+				else if (activeViewIndex == 1)
+				{
+					// FRONT VIEW
+					document.getElementById("frontLabel").classList.add("highlight");
+				}
+				else if (activeViewIndex == 2)
+				{
+					// RIGHT VIEW	 
+					document.getElementById("rightLabel").classList.add("highlight");
+				}
+
+			}
+			let speed = 1; 
+			let distance = speed * deltaTime;
+			if (activeViewIndex == 0)
+			{
+				// TOP VIEW
+				mesh1.position.x += distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
+				mesh1.position.z += distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
+			}
+			else if (activeViewIndex == 1)
+			{ 
+				// FRONT VIEW
+				mesh1.position.x += distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
+				mesh1.position.y -= distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
+			}
+			else if (activeViewIndex == 2)
+			{
+				// RIGHT VIEW 
+				mesh1.position.z -= distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
+				mesh1.position.y -= distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
+			}
+			// ??? FPS CONTROLS?
+
+		} 
+	}
 
 }
 
