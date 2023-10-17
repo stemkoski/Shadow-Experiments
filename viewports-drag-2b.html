@@ -30,7 +30,7 @@ body
 	transform: translate(-50%, -100%);	
 	/* stops user from selecting text */
 	user-select: none; 
-	/* prevents pointer events, so divs behind it are clickable. */
+	/* prevents pointer events, so divs behind it are clickable. */ 
 	pointer-events: none; 
 }
 
@@ -39,6 +39,23 @@ body
     color: #FFFF00 !important;
 }
 
+.screenDiv
+{
+	position: absolute;
+	width: 50%;
+	height: 50%;
+
+	background-color: rgba(0, 0, 0, 0);;
+	z-index: 999;
+
+	/* prevents pointer events, so divs behind it are clickable. */
+	pointer-events: none; 
+}
+
+.darken
+{
+	background-color: rgba(0, 0, 0, 0.4) !important;
+}
 </style>
 
 <script src="js/three.js"></script>
@@ -56,6 +73,10 @@ body
 <div id="rightLabel" class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
 <div id="perspectiveLabel" class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
 
+<div id="topScreen" class="screenDiv" style="left:0%; top:0%;"></div>
+<div id="frontScreen" class="screenDiv" style="left:0%; top:50%;"></div>
+<div id="rightScreen" class="screenDiv" style="left:50%; top:50%;"></div>
+<div id="perspectiveScreen" class="screenDiv" style="left:50%; top:0%;"></div>
 
 
 <script>
@@ -84,10 +105,12 @@ let loader = new THREE.TextureLoader();
 // use for animation effects
 let clock = new THREE.Clock();
 
+/*
 // add a stats panel (show FPS etc); remember to update
 var stats = new Stats();
 stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
 document.body.appendChild(stats.domElement)
+*/
 
 // needed for window resizing
 let windowWidth = 800, windowHeight = 600;
@@ -155,7 +178,7 @@ let orbitControls = new THREE.OrbitControls( viewportDataArray[3].camera, render
 // set up draggable object
 
 // image texturematerial requires server
-let imageTexture = loader.load( 'images/color-grid.png' );
+let imageTexture = loader.load( 'images/color-grid-2.png' ); 
 
 let geo1 = new THREE.SphereGeometry( 0.25 ); 
 let mesh1 = new THREE.Mesh( geo1, 
@@ -223,10 +246,15 @@ document.addEventListener("mousemove", function(event) {
 let imageTexture2 = loader.load("images/gradient-rainbow-2.png"); 
 imageTexture2.wrapS = THREE.RepeatWrapping;
 imageTexture2.wrapT = THREE.RepeatWrapping;
+imageTexture2.repeat.set( 10, 6 ); 
+
+let imageTexture3 = loader.load("images/border-clear.png"); 
+imageTexture3.wrapS = THREE.RepeatWrapping;
+imageTexture3.wrapT = THREE.RepeatWrapping;
+imageTexture3.repeat.set( 40 , 6 ); 
 
 // rainbow: 10, 1
 // border/grid: 40/6
-imageTexture2.repeat.set( 10, 6 ); 
 let geo2 = new THREE.TorusKnotGeometry(1, 0.3, 128, 32);
 // let material = new THREE.MeshLambertMaterial( { color: 0xCC88FF } );
 let material = new THREE.MeshStandardMaterial( { map: imageTexture2, transparent:false, opacity:0.8 } );
@@ -236,6 +264,10 @@ let scale = 0.25;
 mesh2.scale.set(scale, scale, scale);
 scene.add( mesh2 );
 
+let mesh3 = new THREE.Mesh( geo2, 
+ new THREE.MeshLambertMaterial({color: 0xFFFFFF, transparent:true, map:imageTexture3 }));
+mesh3.scale.set(1.001, 1.001, 1.001)
+mesh2.add( mesh3 )
 
 
 let createCylinderMesh = function( pointA, pointB, radius, color )
@@ -322,7 +354,7 @@ var activeViewIndex = null;
 
 function update()
 {
-	stats.update();
+	// stats.update();
 
 	imageTexture2.offset.x += 0.005;
 
@@ -332,6 +364,10 @@ function update()
 	mesh2.scale.set(scale, scale, scale);
 	// cube.rotation.x += 0.01;
 	mesh2.rotation.y += 0.002;
+ 
+	// pulsing bright
+	let c = 0.15 * Math.abs(Math.sin(1*time)); 
+	mesh1.material.emissive.set( new THREE.Color( c, c, c ) );
 
 	if (gamepad)
 	{
@@ -342,30 +378,45 @@ function update()
 			{
 				activeViewIndex = 0;
 				document.getElementById("topLabel").classList.add("highlight");
-				console.log("ASDF")
+				document.getElementById("frontScreen").classList.add("darken");
+				document.getElementById("rightScreen").classList.add("darken");
+				document.getElementById("perspectiveScreen").classList.add("darken");
 			} 
-
+			if (gamepad.isButtonPressed("Start"))
+			{
+				mesh1.position.set(2, 1, 3);
+			}
 			if (gamepad.isButtonPressed("Select")) 
 			{
 				console.log("select" + activeViewIndex)
 				document.getElementById("topLabel").classList.remove("highlight");
 				document.getElementById("frontLabel").classList.remove("highlight");
 				document.getElementById("rightLabel").classList.remove("highlight");
+				document.getElementById("perspectiveLabel").classList.remove("highlight");
+
+				document.getElementById("topScreen").classList.add("darken");
+				document.getElementById("frontScreen").classList.add("darken");
+				document.getElementById("rightScreen").classList.add("darken");
+				document.getElementById("perspectiveScreen").classList.add("darken");
+
 				activeViewIndex = (activeViewIndex + 1) % 3;
 				if (activeViewIndex == 0)
 				{
 					// TOP VIEW
 					document.getElementById("topLabel").classList.add("highlight");
+					document.getElementById("topScreen").classList.remove("darken");
 				}
 				else if (activeViewIndex == 1)
 				{
 					// FRONT VIEW
 					document.getElementById("frontLabel").classList.add("highlight");
+					document.getElementById("frontScreen").classList.remove("darken");
 				}
 				else if (activeViewIndex == 2)
 				{
-					// RIGHT VIEW	 
+					// RIGHT VIEW	  
 					document.getElementById("rightLabel").classList.add("highlight");
+					document.getElementById("rightScreen").classList.remove("darken");
 				}
 
 			}
@@ -389,6 +440,15 @@ function update()
 				mesh1.position.z -= distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
 				mesh1.position.y -= distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
 			}
+
+			let min = 0.8; 
+			let max = 3.2;
+			if (mesh1.position.x > max) mesh1.position.x = max;
+			if (mesh1.position.x < min) mesh1.position.x = min;
+			if (mesh1.position.y > max) mesh1.position.y = max;
+			if (mesh1.position.y < min) mesh1.position.y = min;
+			if (mesh1.position.z > max) mesh1.position.z = max;
+			if (mesh1.position.z < min) mesh1.position.z = min; 
 			// ??? FPS CONTROLS?
 
 		} 
