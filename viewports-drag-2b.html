@@ -149,20 +149,21 @@ function viewportSetup()
 
 	// arrange cameras in Blender quad view style
 
+	var camDist = 8; 
 	// bottom left = FRONT VIEW  
-	viewportDataArray[0].camera.position.set(2, 2, 8);
+	viewportDataArray[0].camera.position.set(2, 2, camDist );
 	viewportDataArray[0].camera.lookAt(2, 2, 0);
 
-	// bottom right = RIGHT VIEW
-	viewportDataArray[1].camera.position.set(8, 2, 2);
+	// bottom right = RIGHT VIEW 
+	viewportDataArray[1].camera.position.set(camDist, 2, 2);
 	viewportDataArray[1].camera.lookAt(0, 2, 2);   
 
 	// top left = TOP VIEW 
-	viewportDataArray[2].camera.position.set(2, 8, 2);
+	viewportDataArray[2].camera.position.set(2, camDist, 2);
 	viewportDataArray[2].camera.lookAt(2, 0, 2); 
 
-	// top right = PERSPECTIVE VIEW
-	viewportDataArray[3].camera.position.set(6,3,6);
+	// top right = PERSPECTIVE VIEW 
+	viewportDataArray[3].camera.position.set(6., 3., 6.   ); 
 	viewportDataArray[3].camera.lookAt(0, 0, 0);
 
 
@@ -293,7 +294,7 @@ function backgroundSetup()
 { 
 	let skyTexture = loader.load('images/hills.jpg');
 	let sky = new THREE.Mesh(
-		new THREE.SphereGeometry(10), 
+		new THREE.SphereGeometry(20), 
 
 		new THREE.MeshBasicMaterial({map: skyTexture, side:THREE.DoubleSide})
 	);
@@ -307,7 +308,7 @@ function backgroundSetup()
 	
 	// origin
 	scene.add( new THREE.Mesh(
-		new THREE.SphereGeometry(0.25), 
+		new THREE.SphereGeometry(0.2), 
 		new THREE.MeshBasicMaterial({color:0x000000}) )
 	);
  
@@ -422,27 +423,42 @@ function update()
 			}
 			let speed = 1; 
 			let distance = speed * deltaTime;
+
+			let horizontal = gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X");
+			if (gamepad.isButtonPressing("Right")) horizontal += 1;
+			if (gamepad.isButtonPressing("Left"))  horizontal -= 1;
+			
+			let vertical = gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y");
+			if (gamepad.isButtonPressing("Up"))    vertical -= 1;
+			if (gamepad.isButtonPressing("Down"))  vertical += 1;
+
+			if (gamepad.isButtonPressed(0)) mesh1.position.set(0,0,0);  
+			if (gamepad.isButtonPressed(1)) mesh1.position.set(4,0,0);
+			if (gamepad.isButtonPressed(2)) mesh1.position.set(0,4,0);
+			if (gamepad.isButtonPressed(3)) mesh1.position.set(0,0,4);
+
 			if (activeViewIndex == 0)
 			{
 				// TOP VIEW
-				mesh1.position.x += distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
-				mesh1.position.z += distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
+				mesh1.position.x += distance * horizontal;
+				mesh1.position.z += distance * vertical;
+				
 			}
 			else if (activeViewIndex == 1)
 			{ 
 				// FRONT VIEW
-				mesh1.position.x += distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
-				mesh1.position.y -= distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
+				mesh1.position.x += distance * horizontal;
+				mesh1.position.y -= distance * vertical;
 			}
 			else if (activeViewIndex == 2)
 			{
 				// RIGHT VIEW 
-				mesh1.position.z -= distance * (gamepad.getAxisValue("Axis1X") + gamepad.getAxisValue("Axis2X"));
-				mesh1.position.y -= distance * (gamepad.getAxisValue("Axis1Y") + gamepad.getAxisValue("Axis2Y"));
+				mesh1.position.z -= distance * horizontal;
+				mesh1.position.y -= distance * vertical;
 			}
 
-			let min = 0.8; 
-			let max = 3.2;
+			let min = 0.5; 
+			let max = 3.5;
 			if (mesh1.position.x > max) mesh1.position.x = max;
 			if (mesh1.position.x < min) mesh1.position.x = min;
 			if (mesh1.position.y > max) mesh1.position.y = max;
