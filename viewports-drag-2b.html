@@ -183,7 +183,7 @@ let imageTexture = loader.load( 'images/color-grid-2.png' );
 
 let geo1 = new THREE.SphereGeometry( 0.25 ); 
 let mesh1 = new THREE.Mesh( geo1, 
-	new THREE.MeshLambertMaterial( { color: 0xFFFFFF, map: imageTexture } ) ); 
+	new THREE.MeshLambertMaterial( { color: 0xFFFFFF, map: imageTexture, side:THREE.DoubleSide } ) );  
 mesh1.position.set(2, 1, 3);
 scene.add( mesh1 );
   
@@ -258,16 +258,16 @@ imageTexture3.repeat.set( 40 , 6 );
 // border/grid: 40/6
 let geo2 = new THREE.TorusKnotGeometry(1, 0.3, 128, 32);
 // let material = new THREE.MeshLambertMaterial( { color: 0xCC88FF } );
-let material = new THREE.MeshStandardMaterial( { map: imageTexture2, transparent:false, opacity:0.8 } );
+let material = new THREE.MeshStandardMaterial( { map: imageTexture2, side:THREE.DoubleSide } );
 let mesh2 = new THREE.Mesh( geo2, material );
 mesh2.position.set(2, 2, 2);
 let scale = 0.25;
 mesh2.scale.set(scale, scale, scale);
 scene.add( mesh2 );
 
-let mesh3 = new THREE.Mesh( geo2, 
+let mesh3 = new THREE.Mesh( 
+ new THREE.TorusKnotGeometry(1, 0.31, 128, 32), 
  new THREE.MeshLambertMaterial({color: 0xFFFFFF, transparent:true, map:imageTexture3 }));
-mesh3.scale.set(1.001, 1.001, 1.001)
 mesh2.add( mesh3 )
 
 
