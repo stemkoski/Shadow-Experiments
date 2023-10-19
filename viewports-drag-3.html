@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+<style>
+body 
+{ 
+	margin: 0; 
+	background-color: #000000;
+}
+
+.labelDiv
+{
+	position: absolute;
+
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 42px; 
+	font-weight: bold;
+	color: #FFFFFF; 
+	-webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: black;
+
+	/* centers the div itself at position */
+	transform: translate(-50%, -100%);	
+	/* stops user from selecting text */
+	user-select: none; 
+	/* prevents pointer events, so divs behind it are clickable. */
+	pointer-events: none; 
+}
+</style>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/Stats.js"></script>
+<script src="js/DragControlsViewport.js"></script>
+
+</head>
+
+<body>
+ 
+<div class="labelDiv" style="left:25%; top:50%">Top&nbsp;View</button></div>
+<div class="labelDiv" style="left:25%; top:99%">Front&nbsp;View</button></div>
+<div class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
+<div class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
+
+
+
+<script>
+
+// standard scene elements
+
+let renderer = new THREE.WebGLRenderer( {antialias: true, autoClear:false} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xf8f0ff ); 
+
+// window region order: bottom left, bottom right, top left, top right
+// initial set orthographic camera radius doesn't really matter
+//   since it is immediately recalculated by the window resize function
+// scene views: FRONT, RIGHT, TOP, PERSPECTIVE
+let viewportDataArray = [
+{
+	left: 0, bottom: 0,	width: 0.5, height: 0.5,
+	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	// ortho camera params: left right top bottom near far
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )},
+{
+	left: 0.5, bottom: 0, width: 0.5, height: 0.5,
+	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+},
+{
+	left: 0, bottom: 0.5, width: 0.5, height: 0.5,
+	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+},
+{
+	left: 0.5, bottom: 0.5, width: 0.5, height: 0.5,
+	camera: new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 )
+}
+]
+
+// arrange cameras in Blender quad view style
+
+// bottom left = FRONT VIEW  
+viewportDataArray[0].camera.position.set(2, 2, 5);
+viewportDataArray[0].camera.lookAt(2, 2, 0);
+
+// bottom right = RIGHT VIEW
+viewportDataArray[1].camera.position.set(5, 2, 2);
+viewportDataArray[1].camera.lookAt(0, 2, 2);   
+
+// top left = TOP VIEW 
+viewportDataArray[2].camera.position.set(2, 1, 2);
+viewportDataArray[2].camera.lookAt(2, 0, 2); 
+
+// top right = PERSPECTIVE VIEW
+viewportDataArray[3].camera.position.set(6,3,6);
+viewportDataArray[3].camera.lookAt(0, 0, 0);
+
+let windowWidth, windowHeight;
+// assign correct initial values
+onWindowResize();
+
+// optional camera movement controls
+let orbitControls = new THREE.OrbitControls( viewportDataArray[3].camera, renderer.domElement );
+
+// add draggable points -------------------------------------------------
+
+// use for loading textures - requires server
+let loader = new THREE.TextureLoader();
+// image texturematerial requires server
+let imageTexture = loader.load( 'images/circle-border3.png' );
+// reuse basic geometry
+let quadGeo = new THREE.PlaneGeometry(1,1)
+function makeQuad()
+{
+	// need a new material for each object,
+	//   since material color change should only apply to individual instance
+	let imageMaterial = new THREE.MeshStandardMaterial({
+  		map: imageTexture, side: THREE.DoubleSide, transparent: true
+	});
+	let quad = new THREE.Mesh(quadGeo, imageMaterial);
+	quad.rotation.set(-Math.PI/2,0,0);
+	let scale = 0.25;
+	quad.scale.set(scale, scale, scale); 
+	scene.add(quad);
+	return quad;
+};
+
+let quad1 = makeQuad();
+quad1.position.set(1, 0, 1); 
+let quad2 = makeQuad();
+quad2.position.set(2, 0, 1); 
+let quad3 = makeQuad();
+quad3.position.set(2, 0,2); 
+
+let ballY = new THREE.Mesh(
+	new THREE.SphereGeometry(0.20),
+	new THREE.MeshStandardMaterial()
+);
+
+ballY.position.set(2,4,2); 
+scene.add(ballY);
+
+// line: a thin plane from pointA to pointB
+let linePlaneGeometry = new THREE.PlaneGeometry(1, 1);
+let lineCylinderGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 4, 1, true);  
+linePlaneGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2));
+lineCylinderGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2));
+let lineMaterial = new THREE.MeshBasicMaterial( {color: 0x8800FF, side: THREE.DoubleSide} );
+let createLineMesh = function( meshA, meshB, meshApex )
+{
+  // let lineMaterial = new THREE.MeshBasicMaterial( {color: 0x8800F, side: THREE.DoubleSide} );
+  let lineMeshAB = new THREE.Mesh(lineCylinderGeometry, lineMaterial);
+
+  lineMeshAB.meshA = meshA;
+  lineMeshAB.meshB = meshB;
+
+  lineMeshAB.update = function()
+  {
+	let pointA = this.meshA.position;
+	let pointB = this.meshB.position;
+	let direction = new THREE.Vector3().subVectors( pointB, pointA );
+	// adjust line length so line does not overlap with meshes representing points
+	// for lines:
+	// this.scale.set(0.05, 1, direction.length() - 0.2);  
+	// for cylinders:
+	this.scale.set(0.2, 0.2, direction.length() - 0.2);  
+	let midPoint = new THREE.Vector3().addVectors(pointA, pointB).multiplyScalar(0.5);
+	this.position.copy(midPoint);
+	this.lookAt(pointB);
+  }
+
+  lineMeshAB.update();
+
+  // for future updates:
+  meshA.nextLine = lineMeshAB;
+  meshB.prevLine = lineMeshAB;
+
+  // might as well add it to the scene
+  scene.add(lineMeshAB);
+
+  let lineMeshApex = new THREE.Mesh(lineCylinderGeometry, lineMaterial);
+  lineMeshApex.meshA = meshA;
+  lineMeshApex.meshB
+
+} 
+
+// first mesh is previous/pointA, second mesh is next/pointB
+let line12 = createLineMesh( quad1, quad2 );
+let line23 = createLineMesh( quad2, quad3 );
+let line31 = createLineMesh( quad3, quad1 );
+
+
+
+
+
+let dragControlsTop = new DragControls( 
+	[  quad1, quad2, quad3 ], viewportDataArray[2].camera, renderer.domElement,
+	-1, 0, +1, 0 );
+
+let dragControlsFront = new DragControls( 
+	[  ], viewportDataArray[0].camera, renderer.domElement,
+	-1, 0, 0, -1 );
+   
+let dragControlsRight = new DragControls( 
+	[  ], viewportDataArray[1].camera, renderer.domElement,
+	0, +1, 0, -1 );
+
+dragControlsTop.addEventListener( 'hoveron', function (event) {
+	event.object.material.emissive.set( 0xFF8888 );  
+} );
+
+dragControlsTop.addEventListener( 'hoveroff', function (event) { 
+	event.object.material.emissive.set( 0x000000 );
+} );
+
+dragControlsTop.addEventListener( 'dragstart', function (event) { 
+	// orbitControls.enabled = false; 
+	event.object.material.emissive.set( 0x8822FF );
+	
+} );
+
+dragControlsTop.addEventListener( 'drag', function (event) { 
+	if (event.object.prevLine)
+		event.object.prevLine.update();
+	if (event.object.nextLine)
+		event.object.nextLine.update();
+} );
+
+dragControlsTop.addEventListener( 'dragend', function (event) { 
+	// orbitControls.enabled = true; 
+	event.object.material.emissive.set( 0x000000 );
+} );
+
+
+/* 
+    "mousedown" event doesn't work quite right; 
+	click and drag on non-orbit-control window
+    "builds up" somehow and releases when returning
+	to orbit controls
+*/
+document.addEventListener("mousemove", function(event) {
+	// top-right window quadrant: scene perspective view
+	if (event.pageX > window.innerWidth/2 && event.pageY < window.innerHeight/2 )
+	{
+		orbitControls.enabled = true; 
+		dragControlsTop.enabled = false;
+		//dragControlsFront.enabled = false;
+		//dragControlsRight.enabled = false;
+	}
+	// top left window quadrant: scene top view
+	else if (event.pageX < window.innerWidth/2 && event.pageY < window.innerHeight/2 )
+	{
+		orbitControls.enabled = false;
+		dragControlsTop.enabled = true;
+		//dragControlsFront.enabled = false;
+		//dragControlsRight.enabled = false;
+	}
+	// bottom left window quadrant: scene front view
+	else if (event.pageX < window.innerWidth/2 && event.pageY > window.innerHeight/2 )
+	{
+		orbitControls.enabled = false;
+		dragControlsTop.enabled = false;
+		//dragControlsFront.enabled = true;
+		//dragControlsRight.enabled = false;
+	}
+	// bottom right window quadrant: scene right view
+	else if (event.pageX > window.innerWidth/2 && event.pageY > window.innerHeight/2 )
+	{
+		orbitControls.enabled = false;
+		dragControlsTop.enabled = false;
+		//dragControlsFront.enabled = false;
+		//dragControlsRight.enabled = true; 
+	}
+});
+
+let ambientLight = new THREE.AmbientLight(0x222222, 1);
+scene.add(ambientLight);
+
+let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
+directionalLight.position.set(1, 4, 2);
+directionalLight.target.position.set(0, 0, 0);
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+
+// add a stats panel (show FPS etc); remember to update
+var stats = new Stats();
+stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
+document.body.appendChild(stats.domElement);
+
+
+// optional for window resizing
+window.addEventListener( 'resize', onWindowResize );
+
+// custom scene elements
+
+
+
+
+
+
+let createCylinderMesh = function( pointA, pointB, radius, color )
+{
+	// radius top, radius bottom, height, radialSegments, heightSegments, open
+	let lineGeometry = new THREE.CylinderGeometry(1,1, 1, 8, 1, false);
+	lineGeometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI/2)); 
+	let lineMaterial = new THREE.MeshBasicMaterial( {color: color, side: THREE.DoubleSide} );
+	let lineMesh = new THREE.Mesh(lineGeometry, lineMaterial);
+   
+	let direction = new THREE.Vector3().subVectors( pointB, pointA );
+	lineMesh.scale.set( radius, radius, direction.length() );  
+	let midPoint = new THREE.Vector3().addVectors(pointA, pointB).multiplyScalar(0.5);
+	lineMesh.position.copy(midPoint);
+	lineMesh.lookAt(pointB);
+
+	scene.add(lineMesh);
+} 
+
+function backgroundSetup()
+{
+	// axes
+	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(5,0,0), 0.1, 0xFF0000);
+	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(0,5,0), 0.1, 0x008800);
+	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,5), 0.1, 0x0000FF);
+	// origin
+	scene.add( new THREE.Mesh(
+		new THREE.SphereGeometry(0.20), 
+		new THREE.MeshBasicMaterial({color:0x000000}) )
+	);
+ 
+	let floorGridHelper = new THREE.GridHelper( 40, 40, 0x888888, 0x888888 );
+	floorGridHelper.position.y = -0.01;
+	scene.add( floorGridHelper );
+
+	let xPerpWall = new THREE.Mesh( 
+		new THREE.PlaneGeometry(4,4), 
+		new THREE.MeshBasicMaterial({color:0xFFDDDD}) );
+	xPerpWall.rotation.y = Math.PI/2;
+	xPerpWall.position.set(0, 2, 2);
+	scene.add( xPerpWall );
+	let xPerpGrid = new THREE.GridHelper( 4, 4, 0x880000, 0x880000 );
+	xPerpGrid.rotation.z = Math.PI/2;
+	xPerpGrid.position.set(0, 2, 2);
+	scene.add( xPerpGrid );
+
+	let yPerpWall = new THREE.Mesh( 
+		new THREE.PlaneGeometry(4,4), 
+		new THREE.MeshBasicMaterial({color:0xDDFFDD}) );
+	yPerpWall.position.set(2, -0.01, 2);
+	yPerpWall.rotation.x = -Math.PI/2;
+	scene.add( yPerpWall );
+	let yPerpGrid = new THREE.GridHelper( 4, 4, 0x008800, 0x008800 );
+	//yPerpGrid.rotation.x = Math.PI/2;
+	yPerpGrid.position.set(2, 0, 2); 
+	scene.add( yPerpGrid );
+
+	let zPerpWall = new THREE.Mesh( 
+		new THREE.PlaneGeometry(4,4), 
+		new THREE.MeshBasicMaterial({color:0xDDDDFF}) );
+	zPerpWall.position.set(2, 2, 0);
+	scene.add( zPerpWall );
+	let zPerpGrid = new THREE.GridHelper( 4, 4, 0x000088, 0x000088 );
+	zPerpGrid.rotation.x = Math.PI/2;
+	zPerpGrid.position.set(2, 2, 0);
+	scene.add( zPerpGrid );
+}
+
+backgroundSetup();
+
+function update()
+{
+	stats.update();
+
+	// cube.rotation.x += 0.01;
+	// cube.rotation.y += 0.011;
+
+}
+
+function render()
+{
+	for (let i = 0; i < viewportDataArray.length; i++)
+	{
+		const view = viewportDataArray[i];
+		const camera = view.camera;
+		const left = Math.floor( windowWidth * view.left ) + 1;
+		const bottom = Math.floor( windowHeight * view.bottom ) + 1;
+		const width = Math.floor( windowWidth * view.width ) - 2;
+		const height = Math.floor( windowHeight * view.height ) - 2;
+
+		renderer.setViewport( left, bottom, width, height );
+		renderer.setScissor( left, bottom, width, height );
+		renderer.setScissorTest( true );
+		
+		//renderer.setClearColor( 0xFF0000 ); // border color
+		//renderer.clearColor(); // clear color buffer
+		
+		// does not exist
+		// renderer.setClearColor( view.background );
+
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
+
+		renderer.render( scene, camera );
+
+	}
+}
+
+function onWindowResize()
+{
+	if ( windowWidth != window.innerWidth || windowHeight != window.innerHeight ) 
+	{
+		windowWidth = window.innerWidth;
+		windowHeight = window.innerHeight;
+		renderer.setSize( windowWidth, windowHeight );
+
+		// force orthographic projections to keep square aspect ratio
+		//   and also contain a radius = "cameraRadius" square (at a minimum)
+		const aspectRatio = windowHeight/windowWidth;
+		const cameraRadius = 2;
+		for (let i = 0; i < 3; i++)
+		{
+			let camera = viewportDataArray[i].camera;
+			if (aspectRatio > 1)
+			{
+				camera.left = -cameraRadius;
+				camera.right = cameraRadius;
+				camera.top = aspectRatio * cameraRadius;
+				camera.bottom = -aspectRatio * cameraRadius;
+				camera.updateProjectionMatrix();
+			}
+			else // (aspectRatio <= 1)
+			{
+				camera.left = -cameraRadius / aspectRatio;
+				camera.right = cameraRadius / aspectRatio;
+				camera.top = cameraRadius;
+				camera.bottom = -cameraRadius;
+				camera.updateProjectionMatrix();
+			}
+		}
+		// viewportDataArray[1].camera.
+	}
+
+	// camera.aspect = window.innerWidth / window.innerHeight;
+	// camera.updateProjectionMatrix();
+	// renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>
