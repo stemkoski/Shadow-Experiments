@@ -198,7 +198,7 @@ let textArray = [
 // this variable is used to determine when meshes are ready to render
 var blockMeshReady = false;
 
-fontLoader.load( '../fonts/droid_sans_bold.typeface.json',  
+fontLoader.load( 'fonts/droid_sans_bold.typeface.json',  
 	function ( font ) 
 	{
 		let textStyle = { 
