@@ -36,6 +36,8 @@ body
 <script src="js/OrbitControls.js"></script>
 <script src="js/Stats.js"></script>
 <script src="js/DragControlsViewport.js"></script>
+<script src="js/csg-lib.js"></script>
+<script src="js/three-csg.js"></script>
 
 </head>
 
@@ -46,8 +48,6 @@ body
 <div class="labelDiv" style="left:75%; top:99%">Right&nbsp;View</button></div>
 <div class="labelDiv" style="left:75%; top:50%">Perspective&nbsp;View</button></div>
 
-
-
 <script>
 
 // standard scene elements
@@ -55,6 +55,8 @@ body
 let renderer = new THREE.WebGLRenderer( {antialias: true, autoClear:false} );
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 let scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xf8f0ff ); 
@@ -62,26 +64,31 @@ scene.background = new THREE.Color( 0xf8f0ff );
 // window region order: bottom left, bottom right, top left, top right
 // initial set orthographic camera radius doesn't really matter
 //   since it is immediately recalculated by the window resize function
-// scene views: FRONT, RIGHT, TOP, PERSPECTIVE
+// viewportDataArray scene views: FRONT, RIGHT, TOP, PERSPECTIVE
 let viewportDataArray = [
 {
 	left: 0, bottom: 0,	width: 0.5, height: 0.5,
 	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
 	// ortho camera params: left right top bottom near far
-	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )},
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 ),
+	invisibleArray: []
+},
 {
 	left: 0.5, bottom: 0, width: 0.5, height: 0.5,
 	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
-	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 ),
+	invisibleArray: []
 },
 {
 	left: 0, bottom: 0.5, width: 0.5, height: 0.5,
 	// camera: new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 )
-	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 )
+	camera: new THREE.OrthographicCamera(  -1, 1, 1, -1, 0.1, 1000 ),
+	invisibleArray: []
 },
 {
 	left: 0.5, bottom: 0.5, width: 0.5, height: 0.5,
-	camera: new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	camera: new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 ),
+	invisibleArray: []
 }
 ]
 
@@ -96,7 +103,7 @@ viewportDataArray[1].camera.position.set(5, 2, 2);
 viewportDataArray[1].camera.lookAt(0, 2, 2);   
 
 // top left = TOP VIEW 
-viewportDataArray[2].camera.position.set(2, 1, 2);
+viewportDataArray[2].camera.position.set(2, 4, 2);
 viewportDataArray[2].camera.lookAt(2, 0, 2); 
 
 // top right = PERSPECTIVE VIEW
@@ -133,20 +140,44 @@ function makeQuad()
 	return quad;
 };
 
+
+var ballX, ballY, ballZ;
+function setupLights()
+{
+	 
+	let ambientLight = new THREE.AmbientLight(0x222222, 1);
+	scene.add(ambientLight);
+
+	// TODO: also stores position of point light
+	ballY = new THREE.Mesh(
+		new THREE.SphereGeometry(0.20, 8, 8), 
+		new THREE.MeshBasicMaterial({wireframe:true, color:0x00FF00}) 
+	);
+
+	ballY.position.set(2,4,2); 
+	scene.add(ballY);
+
+	let pointLightY = new THREE.PointLight(0xFFFFFF);
+	pointLightY.castShadow = true;
+	ballY.add(pointLightY);
+}
+setupLights();
+
+
+
+// NOTE: THESE ARE IN CLOCKWISE ORDER
 let quad1 = makeQuad();
 quad1.position.set(1, 0, 1); 
-let quad2 = makeQuad();
-quad2.position.set(2, 0, 1); 
+let quad2 = makeQuad(); 
+quad2.position.set(3, 0, 1);
 let quad3 = makeQuad();
-quad3.position.set(2, 0,2); 
+quad3.position.set(3.5, 0, 2); 
+let quad4 = makeQuad();
+quad4.position.set(2, 0, 3);
+let quad5 = makeQuad();
+quad5.position.set(0.5, 0, 2);
 
-let ballY = new THREE.Mesh(
-	new THREE.SphereGeometry(0.20),
-	new THREE.MeshStandardMaterial()
-);
-
-ballY.position.set(2,4,2); 
-scene.add(ballY);
+let quadArray = [quad1, quad2, quad3, quad4, quad5];
 
 // line: a thin plane from pointA to pointB
 let linePlaneGeometry = new THREE.PlaneGeometry(1, 1);
@@ -180,72 +211,99 @@ let createLineMesh = function( meshA, meshB, meshApex )
   lineMeshAB.update();
 
   // for future updates:
-  meshA.nextLine = lineMeshAB;
-  meshB.prevLine = lineMeshAB;
+  if (meshA.lineArray == null)
+  	meshA.lineArray = [];
+  if (meshB.lineArray == null)
+  	meshB.lineArray = [];
+  meshA.lineArray.push(lineMeshAB);
+  meshB.lineArray.push(lineMeshAB);
 
   // might as well add it to the scene
   scene.add(lineMeshAB);
 
-  let lineMeshApex = new THREE.Mesh(lineCylinderGeometry, lineMaterial);
-  lineMeshApex.meshA = meshA;
-  lineMeshApex.meshB
-
+  return lineMeshAB;
 } 
 
 // first mesh is previous/pointA, second mesh is next/pointB
-let line12 = createLineMesh( quad1, quad2 );
-let line23 = createLineMesh( quad2, quad3 );
-let line31 = createLineMesh( quad3, quad1 );
 
+for (let i = 0; i < quadArray.length; i++)
+{
+	let quadA = quadArray[i];
+	let quadB = quadArray[(i+1)%quadArray.length]
+	createLineMesh(quadA, quadB);
 
+	let apexLine = createLineMesh(quadA, ballY);
+	viewportDataArray[2].invisibleArray.push(apexLine);
+}
 
+var normalMaterial = new THREE.MeshNormalMaterial();
 
+// viewportDataArray scene views: FRONT, RIGHT, TOP, PERSPECTIVE
+// exclude these objects from top view 
+ 
+var dragControlsTop, dragControlsFront, dragControlsRight;
+function setupDragControls()
+{
+	dragControlsTop = new DragControls( 
+		quadArray, 
+		viewportDataArray[2].camera, renderer.domElement,
+		-1, 0, +1, 0 );
 
-let dragControlsTop = new DragControls( 
-	[  quad1, quad2, quad3 ], viewportDataArray[2].camera, renderer.domElement,
-	-1, 0, +1, 0 );
-
-let dragControlsFront = new DragControls( 
-	[  ], viewportDataArray[0].camera, renderer.domElement,
-	-1, 0, 0, -1 );
-   
-let dragControlsRight = new DragControls( 
-	[  ], viewportDataArray[1].camera, renderer.domElement,
-	0, +1, 0, -1 );
-
-dragControlsTop.addEventListener( 'hoveron', function (event) {
-	event.object.material.emissive.set( 0xFF8888 );  
-} );
-
-dragControlsTop.addEventListener( 'hoveroff', function (event) { 
-	event.object.material.emissive.set( 0x000000 );
-} );
-
-dragControlsTop.addEventListener( 'dragstart', function (event) { 
-	// orbitControls.enabled = false; 
-	event.object.material.emissive.set( 0x8822FF );
+	dragControlsFront = new DragControls( 
+		[  ], 
+		viewportDataArray[0].camera, renderer.domElement,
+		-1, 0, 0, -1 );
 	
-} );
+	dragControlsRight = new DragControls( 
+		[  ], 
+		viewportDataArray[1].camera, renderer.domElement,
+		0, +1, 0, -1 );
 
-dragControlsTop.addEventListener( 'drag', function (event) { 
-	if (event.object.prevLine)
-		event.object.prevLine.update();
-	if (event.object.nextLine)
-		event.object.nextLine.update();
-} );
+	dragControlsTop.addEventListener( 'hoveron', function (event) {
+		event.object.material.emissive.set( 0xFF8888 );  
+	} );
 
-dragControlsTop.addEventListener( 'dragend', function (event) { 
-	// orbitControls.enabled = true; 
-	event.object.material.emissive.set( 0x000000 );
-} );
+	dragControlsTop.addEventListener( 'hoveroff', function (event) { 
+		event.object.material.emissive.set( 0x000000 );
+	} );
 
+	dragControlsTop.addEventListener( 'dragstart', function (event) { 
+		event.object.material.emissive.set( 0x8822FF );
+	} );
 
-/* 
-    "mousedown" event doesn't work quite right; 
-	click and drag on non-orbit-control window
-    "builds up" somehow and releases when returning
-	to orbit controls
-*/
+	dragControlsTop.addEventListener( 'drag', function (event) { 
+
+		if (event.object.lineArray)
+			for (let i = 0; i < event.object.lineArray.length; i++)
+				event.object.lineArray[i].update();
+
+		pyramidYMesh.geometry.updateVertexData();
+
+		let bspA = CSG.fromMesh( pyramidYMesh ); 
+		let bspB = CSG.fromMesh( sliceBox ); 
+		let bspAintersectB = bspA.intersect(bspB);   
+
+		csgSolidMesh.parent.remove(csgSolidMesh);
+		csgSolidMesh.geometry.dispose();
+		csgSolidMesh = CSG.toMesh( bspAintersectB, new THREE.Matrix4() );
+		csgSolidMesh.material = normalMaterial;
+		scene.add(csgSolidMesh);
+
+		csgLineMesh.parent.remove(csgLineMesh);
+		csgLineMesh.geometry.dispose();
+		csgLineMesh = new THREE.LineSegments( new THREE.WireframeGeometry(csgSolidMesh.geometry) );
+		csgLineMesh.material.color.setHex(0x000000);
+		scene.add(csgLineMesh); 
+
+	} );
+
+	dragControlsTop.addEventListener( 'dragend', function (event) { 
+		event.object.material.emissive.set( 0x000000 );
+	} );
+}
+setupDragControls();
+
+// enable/disable orbitControls/dragControls based on mouse position
 document.addEventListener("mousemove", function(event) {
 	// top-right window quadrant: scene perspective view
 	if (event.pageX > window.innerWidth/2 && event.pageY < window.innerHeight/2 )
@@ -281,31 +339,128 @@ document.addEventListener("mousemove", function(event) {
 	}
 });
 
-let ambientLight = new THREE.AmbientLight(0x222222, 1);
-scene.add(ambientLight);
 
-let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
-directionalLight.position.set(1, 4, 2);
-directionalLight.target.position.set(0, 0, 0);
-scene.add(directionalLight);
-scene.add(directionalLight.target);
+// create a geometry -------------------------------------------------------
 
+let pyramidYGeometry = new THREE.BufferGeometry();
+
+pyramidYGeometry.apexMesh = ballY;
+// NOTE: THESE ARE IN CLOCKWISE ORDER
+pyramidYGeometry.baseMeshArray = quadArray;
+
+pyramidYGeometry.updateVertexData = function() 
+{
+	// vertex 0: apex point
+	let posArray = [
+		this.apexMesh.position.x,
+		this.apexMesh.position.y,
+		this.apexMesh.position.z
+	];
+
+	// n = number of base vertices
+	let n = this.baseMeshArray.length;
+
+	// uv coordinates only included for testing purposes
+	let uvArray = [ 0.5, 1.0 ];
+
+	// vertices 1 thru n: base points
+	for (let i = 0; i < n; i++) 
+	{
+		let m = this.baseMeshArray[i]; 
+		let p = m.position;
+		posArray.push( p.x, p.y, p.z );
+
+		uvArray.push( 1 - i/(n-1), 0.01 )
+	}
+
+	let posF32Array = new Float32Array( posArray );
+	let  uvF32Array = new Float32Array(  uvArray );
+
+	// note: this only works for triangle fan style 
+	//   triangularizations - no shapes with holes, yet
+	let indexArray = [];
+
+	// pyramid sides
+	for (let i = 1; i < n; i++)
+	{
+		indexArray.push( 0, i+1, i );
+	}
+	
+	// last side triangle
+	indexArray.push(0, 1, this.baseMeshArray.length);
+	
+	// base triangles 
+	for (let i = 2; i < n; i++)
+	{
+		indexArray.push( 1, i, i+1 ); 
+	}
+
+	if (!this.attributes.position ||  
+	    !this.attributes.position.array ||
+		!this.attributes.position.array.length == 0)
+	{
+		this.setAttribute("position", new THREE.BufferAttribute( posF32Array, 3 ) );
+		this.setAttribute("uv", new THREE.BufferAttribute( uvF32Array, 2 ) );
+	}
+	else
+	{
+		this.attributes.position.array = posF32Array;
+	}
+	this.attributes.position.needsUpdate = true;
+
+	this.setIndex( indexArray ); 
+
+	this.computeVertexNormals(); 
+
+}
+  
+pyramidYGeometry.updateVertexData();
+
+let pyramidTexture = loader.load( 'images/color-grid.png' );
+let pyramidMaterial = new THREE.MeshBasicMaterial( 
+	 { map:pyramidTexture, color:0xFFFFFF, side:THREE.FrontSide,
+	   transparent:true, opacity:0.0  } );
+let pyramidYMesh = new THREE.Mesh( pyramidYGeometry, pyramidMaterial );
+
+pyramidYMesh.castShadow = true;
+
+scene.add(pyramidYMesh);
+
+let sliceBox = new THREE.Mesh(
+	new THREE.BoxGeometry(4, 0.5, 4),
+	new THREE.MeshNormalMaterial({transparent:true, opacity:0.2})
+);
+sliceBox.position.set(2, 2, 2);
+sliceBox.updateMatrix(); 
+scene.add(sliceBox); 
+
+sliceBoxLines = sliceBox.clone();
+sliceBoxLines.material = new THREE.MeshBasicMaterial({wireframe:true, color:0xFF0000});
+// scene.add(sliceBoxLines);
+
+let bspA = CSG.fromMesh( pyramidYMesh ); 
+let bspB = CSG.fromMesh( sliceBox );  
+let bspAintersectB = bspA.intersect(bspB);   
+
+var csgSolidMesh = CSG.toMesh( bspAintersectB, new THREE.Matrix4() );
+csgSolidMesh.material = normalMaterial; // colors by side it is currently facing?
+scene.add(csgSolidMesh) 
+
+var csgLineMesh = new THREE.LineSegments(
+	new THREE.WireframeGeometry( csgSolidMesh.geometry )
+);
+csgLineMesh.material.color.setHex(0x000000);
+scene.add(csgLineMesh); 
+
+// ---------------------------------------------------------------------------
 
 // add a stats panel (show FPS etc); remember to update
 var stats = new Stats();
 stats.domElement.style.cssText = 'position:absolute;top:0px;left:0px;';
 document.body.appendChild(stats.domElement);
 
-
 // optional for window resizing
 window.addEventListener( 'resize', onWindowResize );
-
-// custom scene elements
-
-
-
-
-
 
 let createCylinderMesh = function( pointA, pointB, radius, color )
 {
@@ -324,7 +479,7 @@ let createCylinderMesh = function( pointA, pointB, radius, color )
 	scene.add(lineMesh);
 } 
 
-function backgroundSetup()
+function setupBackground()
 {
 	// axes
 	createCylinderMesh(new THREE.Vector3(0,0,0), new THREE.Vector3(5,0,0), 0.1, 0xFF0000);
@@ -342,7 +497,7 @@ function backgroundSetup()
 
 	let xPerpWall = new THREE.Mesh( 
 		new THREE.PlaneGeometry(4,4), 
-		new THREE.MeshBasicMaterial({color:0xFFDDDD}) );
+		new THREE.MeshStandardMaterial({color:0xFFDDDD}) );
 	xPerpWall.rotation.y = Math.PI/2;
 	xPerpWall.position.set(0, 2, 2);
 	scene.add( xPerpWall );
@@ -350,30 +505,32 @@ function backgroundSetup()
 	xPerpGrid.rotation.z = Math.PI/2;
 	xPerpGrid.position.set(0, 2, 2);
 	scene.add( xPerpGrid );
+	xPerpWall.receiveShadow = true; 
 
 	let yPerpWall = new THREE.Mesh( 
 		new THREE.PlaneGeometry(4,4), 
-		new THREE.MeshBasicMaterial({color:0xDDFFDD}) );
+		new THREE.MeshStandardMaterial({color:0xDDFFDD}) );
 	yPerpWall.position.set(2, -0.01, 2);
 	yPerpWall.rotation.x = -Math.PI/2;
 	scene.add( yPerpWall );
 	let yPerpGrid = new THREE.GridHelper( 4, 4, 0x008800, 0x008800 );
-	//yPerpGrid.rotation.x = Math.PI/2;
 	yPerpGrid.position.set(2, 0, 2); 
 	scene.add( yPerpGrid );
+	yPerpWall.receiveShadow = true; 
 
 	let zPerpWall = new THREE.Mesh( 
 		new THREE.PlaneGeometry(4,4), 
-		new THREE.MeshBasicMaterial({color:0xDDDDFF}) );
+		new THREE.MeshStandardMaterial({color:0xDDDDFF}) );
 	zPerpWall.position.set(2, 2, 0);
 	scene.add( zPerpWall );
 	let zPerpGrid = new THREE.GridHelper( 4, 4, 0x000088, 0x000088 );
 	zPerpGrid.rotation.x = Math.PI/2;
 	zPerpGrid.position.set(2, 2, 0);
 	scene.add( zPerpGrid );
+	zPerpWall.receiveShadow = true; 
 }
 
-backgroundSetup();
+setupBackground();
 
 function update()
 {
@@ -404,11 +561,19 @@ function render()
 		
 		// does not exist
 		// renderer.setClearColor( view.background );
-
+ 
 		camera.aspect = width / height;
 		camera.updateProjectionMatrix();
 
+		// make meshes in invisibleArray not visible 
+		for (let mesh of view.invisibleArray)
+			mesh.visible = false; 
+
 		renderer.render( scene, camera );
+
+		// and then back to normal 
+		for (let mesh of view.invisibleArray)
+			mesh.visible = true;  
 
 	}
 }
