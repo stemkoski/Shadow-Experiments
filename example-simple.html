@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+	<style>
+		body { margin: 0; }
+	</style>
+</head>
+
+<body>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+
+<script>
+
+// standard scene elements
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xAACCFF );
+
+let camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.position.set(0, 2, 5);
+
+let ambientLight = new THREE.AmbientLight(0x222222, 1);
+scene.add(ambientLight);
+
+let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
+directionalLight.position.set(1, 4, 2);
+directionalLight.target.position.set(0, 0, 0);
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+let renderer = new THREE.WebGLRenderer( {antialias: true} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// optional camera movement controls
+let controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+// optional for window resizing
+window.addEventListener( 'resize', onWindowResize );
+
+// custom scene elements
+
+let gridHelper = new THREE.GridHelper( 10, 10, 0x888888, 0x444444 );
+scene.add( gridHelper );
+
+let floor = new THREE.Mesh(
+	new THREE.PlaneGeometry(10, 10), 
+	new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.3 })
+);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+scene.add( new THREE.AxesHelper(5) );
+
+
+// a box
+let geometry = new THREE.BoxGeometry( 1, 1, 1 );
+let material = new THREE.MeshLambertMaterial( { color: 0xCC88FF } );
+let cube = new THREE.Mesh( geometry, material );
+cube.position.set(0, 1, 0);
+scene.add( cube );
+
+
+
+function update()
+{
+
+}
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+function onWindowResize()
+{
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>

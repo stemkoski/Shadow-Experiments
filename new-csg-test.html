@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<!-- blank favicon -->
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+	<title>three.js example</title>
+	<style>
+		body { margin: 0; }
+	</style>
+</head>
+
+<body>
+
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/csg-lib-2.js"></script>
+<script src="js/three-csg-2.js"></script>
+
+<script>
+
+// standard scene elements
+
+let scene = new THREE.Scene();
+scene.background = new THREE.Color( 0xAACCFF );
+
+let camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.position.set(0, 2, 5);
+
+let ambientLight = new THREE.AmbientLight(0x222222, 1);
+scene.add(ambientLight);
+
+let directionalLight = new THREE.DirectionalLight(0xDDDDDD, 1);
+directionalLight.position.set(2.04, 4.05, 1.07);
+directionalLight.target.position.set(0, 0, 0);
+scene.add(directionalLight);
+scene.add(directionalLight.target);
+
+let renderer = new THREE.WebGLRenderer( {antialias: true} );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// optional camera movement controls
+let controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+// optional for window resizing
+window.addEventListener( 'resize', onWindowResize );
+
+// custom scene elements
+
+let gridHelper = new THREE.GridHelper( 10, 10, 0x888888, 0x444444 );
+scene.add( gridHelper );
+
+let floor = new THREE.Mesh(
+	new THREE.PlaneGeometry(10, 10), 
+	new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.3 })
+);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+scene.add( new THREE.AxesHelper(5) );
+
+
+// a box
+let geometry = new THREE.ConeGeometry(1,1, 4);
+
+let material = new THREE.MeshLambertMaterial( { color: 0xCC88FF, wireframe:false } );
+let meshA = new THREE.Mesh( 
+	new THREE.ConeGeometry(1,2, 4), 
+	// new THREE.SphereGeometry(0.6),
+	material 
+);
+//scene.add( meshA );
+
+let meshB = new THREE.Mesh( 
+	// new THREE.ConeGeometry(2, 1, 4), 
+	new THREE.BoxGeometry(1,1,1),
+	material 
+);
+// scene.add(meshB);
+
+let csgA = CSG.fromMesh(meshA)
+
+let csgB = CSG.fromMesh(meshB)
+
+let csgC = csgA.union(csgB);
+let meshC = CSG.toMesh(csgC, new THREE.Matrix4())
+meshC.material = new THREE.MeshLambertMaterial({color:0xFF0000})
+
+// scene.add(meshC)
+/*
+console.log(csgA)
+console.log(csgB)
+console.log(csgC)
+*/
+function test()
+{
+	// TODO: NAMESPACE
+
+    console.log("CSG Test:");
+
+    // setting up vectors for a square pyramid, apex at (0,1,0), base within xz-plane
+    let p0 = new Vector(0, +1, 0);
+    let p1 = new Vector(+1, 0, 0);
+    let p2 = new Vector(0, 0, +1);
+    let p3 = new Vector(-1, 0, 0);
+    let p4 = new Vector(0, 0, -1);
+
+    // vertex is a data structure, stores position vector, normal vector (?), optional other things
+    let v0 = new Vertex(p0);
+    let v1 = new Vertex(p1);
+    let v2 = new Vertex(p2);
+    let v3 = new Vertex(p3);
+    let v4 = new Vertex(p4);
+
+    // create polygon/faces from vertices (assume counterclockwise from outside works)
+    let f0 = new Polygon( [v0, v2, v1] );
+	let f1 = new Polygon( [v0, v3, v2] );
+	let f2 = new Polygon( [v0, v4, v3] );
+	let f3 = new Polygon( [v0, v1, v4] );
+	let f4 = new Polygon( [v1, v2, v3, v4] ); // reducing to 3 doesn't fix CSG union
+
+	let positionArray = [p0,p1,p2,p3,p4];
+	let vertexArray = [];
+	for (let i = 0; i < positionArray.length; i++)
+	{
+		let p = positionArray[i];
+		p.y -= 0.5;
+		vertexArray.push( new Vertex(p) );
+	}
+
+	// v = vertex array
+	let v = vertexArray;
+
+	let polygonArray2 = [
+		new Polygon( [ v[0], v[2], v[1] ] ),
+		new Polygon( [ v[0], v[3], v[2] ] ),
+		new Polygon( [ v[0], v[4], v[3] ] ),
+		new Polygon( [ v[0], v[1], v[4] ] ),
+		new Polygon( [ v[1], v[2], v[3], v[4] ] )
+	]
+
+	let mat = new THREE.MeshStandardMaterial({color:0xCC88FF});
+
+	let csg = new CSG( [f0,f1,f2,f3, f4] );
+	let geo = CSG.toGeometry(csg);	
+	let mesh = new THREE.Mesh(geo, mat);
+	// scene.add(mesh);
+
+	let csg2 = new CSG( polygonArray2 );
+	let geo2 = CSG.toGeometry( csg2 );
+	let mesh2 = new THREE.Mesh(geo2, mat);
+	// scene.add(mesh2);
+
+	let csg3 = csg.union(csg2);
+	let geo3 = CSG.toGeometry( csg3 );
+	let mesh3 = new THREE.Mesh(geo3, mat);
+	scene.add(mesh3);
+
+
+	/*
+	let geo = CSG.toGeometry(csg);
+
+	console.log(geo)
+
+	geo.computeVertexNormals();
+	let mesh = new THREE.Mesh(geo,
+		new THREE.MeshLambertMaterial({color:0xFF0000}) );
+
+	scene.add(mesh);
+	*/
+
+	
+}
+
+test();
+
+
+
+
+
+function update()
+{
+
+}
+
+function render()
+{
+	renderer.render( scene, camera );
+}
+
+function onWindowResize()
+{
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>

@@ -15,8 +15,8 @@
 <script src="js/three.js"></script>
 <script src="js/OrbitControls.js"></script>
 <script src="js/Stats.js"></script>
-<script src="js/csg-lib.js"></script>
-<script src="js/three-csg.js"></script>
+<script src="js/csg-lib-1a.js"></script>
+<script src="js/three-csg-1a.js"></script>
 
 <script>
 
@@ -90,7 +90,8 @@ let cube = new THREE.Mesh( geometry1, material1 );
 // don't need to add original objects to scene
 // scene.add( cube );
 
-let geometry2 = new THREE.SphereGeometry( 0.65 );
+let geometry2 = new THREE.SphereGeometry( 0.6 );
+// test with cone also
 let material2 = new THREE.MeshLambertMaterial( { color: 0xCC88FF } );
 let sphere = new THREE.Mesh( geometry2, material2 );
 
