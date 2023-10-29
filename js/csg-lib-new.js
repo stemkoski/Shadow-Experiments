@@ -123,13 +123,13 @@ CSG.Vertex = class
 }
 
 // tolerance used to determine if a point is on a plane
-CSG.EPSILON = 1e-5;
+CSG.EPSILON = 1e-6;
 
 // constant used to classify position of point/polygon relative to plane
-CSG.COPLANAR = 12;
-CSG.FRONT    = 10;
-CSG.BACK     = 20;
-CSG.SPANNING = 30;
+CSG.COPLANAR = 0;
+CSG.FRONT    = 1;
+CSG.BACK     = 2;
+CSG.SPANNING = 3;
 
 CSG.Plane = class 
 {
@@ -252,7 +252,7 @@ CSG.Plane = class
                 if (typeI == CSG.COPLANAR)
                 {
                     frontVertexList.push(vertexI);
-                    backVertexList.push(vertexI);
+                    backVertexList.push(vertexI.clone());
                 }
                 
                 if ((typeI == CSG.FRONT && typeJ == CSG.BACK) ||
@@ -523,12 +523,21 @@ CSG.BSPNode = class
 
         this.polygons = [];
         
-        this.augment(polygons);
+        if (polygons)
+            this.augment(polygons);
     }
 
     // sort additional polygons into this tree structure
     augment(polygons) 
     {
+        // TODO: is this really necessary?
+        if (!polygons || polygons.length == 0)
+            return;
+
+        // TODO: is this really necessary?
+        //if (!this.plane)
+        //    this.plane = polygons[0].plane.clone();
+
         let frontPolygonList = [];
         let  backPolygonList = [];
 
@@ -541,16 +550,16 @@ CSG.BSPNode = class
 
         if (frontPolygonList.length > 0) 
         {
-            if (!this.frontNode)
+            if (this.frontNode == null)
                 this.frontNode = new CSG.BSPNode(frontPolygonList);
-            else 
+            else
                 this.frontNode.augment(frontPolygonList);
         }
 
         if (backPolygonList.length > 0) 
         {
-            if (!this.backNode)
-                this.backNode= new CSG.BSPNode(backPolygonList);
+            if ( this.backNode == null )
+                this.backNode = new CSG.BSPNode(backPolygonList);
             else
                 this.backNode.augment(backPolygonList);
         }
@@ -582,6 +591,7 @@ CSG.BSPNode = class
     //   "inside" this mesh, indicated by being on back side of a leaf of the BSP tree.
     clipPolygons(polygonList) 
     {
+
         let frontPolygonList = [];
         let  backPolygonList = [];
 
@@ -598,8 +608,7 @@ CSG.BSPNode = class
 
         if (this.backNode != null)
             backPolygonList = this.backNode.clipPolygons(backPolygonList);
-        
-        if (this.backNode == null)
+        else // (this.backNode == null)
             backPolygonList = [];
             
         return frontPolygonList.concat(backPolygonList);
