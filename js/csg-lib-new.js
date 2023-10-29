@@ -341,9 +341,14 @@ CSG.Mesh = class
        return CSG.subtract(this, other);
     }
 
-    toGeometry()
+    toMeshGeometry()
     {
-        return CSG.toGeometry(this);
+        return CSG.toMeshGeometry(this);
+    }
+
+    toLineGeometry()
+    {
+        return CSG.toLineGeometry(this);
     }
 }
 
@@ -640,10 +645,12 @@ CSG.BSPNode = class
     }
 }
 
-// convert to a three.js compatible THREE.BufferGeometry object, use for rendering
-CSG.toGeometry = function(csgMesh) 
+// TODO: rename to "toMeshGeometry"
+// convert to a three.js compatible THREE.BufferGeometry object, use for rendering as solid
+//  via new THREE.Mesh( csgMesh.toMeshGeometry(), new THREE.MeshStandardMaterial({color:0x0000FF}) );
+CSG.toMeshGeometry = function(csgMesh) 
 {
-    let polygonArray = csgMesh.polygons;
+    let polygonArray = csgMesh.polygons;  
 
     // triCount = number of triangles used by this geometry;
     //   each n-sided polygon contributes (n-2) triangles
@@ -675,6 +682,31 @@ CSG.toGeometry = function(csgMesh)
 
     // since this geometry is non-indexed, set each vertex normal to its face normal
 	geom.computeVertexNormals();
+    
+    return geom;
+}
+
+// convert to a three.js compatible THREE.BufferGeometry object, use for rendering as wireframe
+//  via new THREE.LineSegments( csgMesh.toLineGeometry(), new THREE.LineBasicMaterial({color:0x0000FF}) );
+CSG.toLineGeometry = function(csgMesh)
+{
+    let polygonArray = csgMesh.polygons; 
+    let geom = new THREE.BufferGeometry();
+    let posArray = [];
+    
+    for (let polygon of polygonArray)
+    {
+        let pv = polygon.vertices;
+        let pvl = polygon.vertices.length;
+        for (let j = 0; j < pvl; j++) 
+        {            
+            posArray.push( pv[j].pos.x, pv[j].pos.y, pv[j].pos.z );
+            posArray.push( pv[(j+1) % pvl].pos.x, pv[(j+1) % pvl].pos.y, pv[(j+1) % pvl].pos.z );
+        }
+    }
+
+    geom.setAttribute('position', 
+        new THREE.BufferAttribute( new Float32Array(posArray), 3 ) );
     
     return geom;
 }
