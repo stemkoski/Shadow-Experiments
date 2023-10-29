@@ -363,7 +363,7 @@ scene.add(pyramidYMesh);
 var boxCSG = CSG.createBox( new CSG.Vector(2,2,2), 4, 0.5, 4 );  
 var boxMaterial = new THREE.MeshNormalMaterial({ 
     transparent:false, opacity:0.5, wireframe:true});
-var boxMesh = new THREE.Mesh( boxCSG.toGeometry(), boxMaterial );
+var boxMesh = new THREE.Mesh( boxCSG.toMeshGeometry(), boxMaterial );
 boxMesh.castShadow = false; 
 scene.add(boxMesh);
  
@@ -397,7 +397,7 @@ function updatePyramidYMesh()
 	}
 
 	pyramidYCSG = CSG.createPyramidGeneral( apexPoint, basePointArray );
-	pyramidYMesh = new THREE.Mesh( pyramidYCSG.toGeometry(), pyramidMaterial );
+	pyramidYMesh = new THREE.Mesh( pyramidYCSG.toMeshGeometry(), pyramidMaterial );
 	scene.add( pyramidYMesh );
 
 	let boxCSG = CSG.createBox( new CSG.Vector(2,2,2), 4, 0.5, 4 );  
@@ -406,7 +406,7 @@ function updatePyramidYMesh()
 	intersectionMesh.geometry.dispose();  
 
 	let intersectionCSG = pyramidYCSG.intersect(boxCSG);
-	intersectionMesh = new THREE.Mesh( intersectionCSG.toGeometry(), normalMaterial );
+	intersectionMesh = new THREE.Mesh( intersectionCSG.toMeshGeometry(), normalMaterial );
     scene.add(intersectionMesh);
 	
 
