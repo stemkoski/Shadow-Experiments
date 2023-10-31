@@ -67,19 +67,29 @@ function test()
 	let csg2 = CSG.createBox( new CSG.Vector(0,1,0), 2, 1, 0.5 );
 	let csg3 = csg1.intersect(csg2); 
 
-	let geo1 = csg1.toGeometry();
-	let mat1 = new THREE.MeshBasicMaterial(
-		{color:0xFF0000, transparent:true, opacity:0.5, wireframe:true} );
-	let mesh1 = new THREE.Mesh(geo1, mat1);
-	scene.add(mesh1);
+	let mesh1A = new THREE.Mesh( 
+		csg1.toMeshGeometry(), 
+		new THREE.MeshBasicMaterial({color:0xFF0000, wireframe:true})
+	);
+	// scene.add(mesh1A);
 
-	let geo2 = csg2.toGeometry();	
-	let mat2 = new THREE.MeshBasicMaterial(
-		{color:0x0000FF, transparent:true, opacity:0.5, wireframe:true} );
-	let mesh2 = new THREE.Mesh(geo2, mat2);
-	scene.add(mesh2);
+	let mesh1B = new THREE.LineSegments(  
+		csg1.toLineGeometry(), 
+		new THREE.LineBasicMaterial({color:0xFF0000}) )
+	scene.add(mesh1B);
 
-	let geo3 = csg3.toGeometry();	
+	let mesh2A = new THREE.Mesh(
+		csg2.toMeshGeometry(), 
+		new THREE.MeshBasicMaterial({color:0x0000FF, wireframe:true})
+	);
+	// scene.add(mesh2A);
+
+	let mesh2B = new THREE.LineSegments(  
+		csg2.toLineGeometry(), 
+		new THREE.LineBasicMaterial({color:0x0000FF}) )
+	scene.add(mesh2B);
+
+	let geo3 = csg3.toMeshGeometry();	
 	let mat3 = new THREE.MeshStandardMaterial(
 		{color:0xCC88FF, transparent:false, opacity:0.5, wireframe:false} );
 	let mesh3 = new THREE.Mesh(geo3, mat3);
