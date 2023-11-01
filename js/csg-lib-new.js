@@ -280,13 +280,13 @@ CSG.Plane = class
 // TODO: why convex??
 CSG.Polygon = class
 {
-    constructor(vertices) 
+    constructor(vertexArray) 
     {
-        this.vertices = vertices;
+        this.vertices = vertexArray;
 
-        let a = vertices[0].pos.clone();
-        let b = vertices[1].pos.clone();
-        let c = vertices[2].pos.clone();
+        let a = vertexArray[0].pos.clone();
+        let b = vertexArray[1].pos.clone();
+        let c = vertexArray[2].pos.clone();
         let normal = b.sub(a).cross( c.sub(a) ).normalize();
         let w = normal.dot(a);
         this.plane = new CSG.Plane(normal, w); 
@@ -303,10 +303,60 @@ CSG.Polygon = class
     flip() 
     {    
         // The array of vertices (initially specified in counterclockwise order)
-        //   does not need to be reversed; their order is no longer relevant, 
+        //   does not technically need to be reversed for CSG calculation purposes; 
+        //   their order is no longer relevant, 
         //   because the polygon's normal vector is never recalculated.
 
+        // However, vertex order is important for the extrude method below
+        this.vertices.reverse();
         this.plane.flip();
+    }
+
+    extrudeToMesh(distance=1)
+    {
+        let n = this.vertices.length;
+        let polygonBottom = this.clone();
+        let polygonTop    = this.clone();
+        for (let i = 0; i < n; i++)
+        {
+            // translate by distance along the (unit) normal direction
+            polygonTop.vertices[i].pos.add( this.plane.normal.clone().mult(distance) );
+        }
+
+        let polygonList = [polygonBottom, polygonTop];
+        // add side faces resulting from extrusion
+        for (let i = 0; i < n; i++)
+        {
+            let face = new CSG.Polygon([
+                polygonTop.vertices[i].clone(),
+                polygonBottom.vertices[i].clone(),
+                polygonBottom.vertices[(i+1)%n].clone(),
+                polygonTop.vertices[(i+1)%n].clone()
+            ]);
+
+            polygonList.push( face ); 
+        }
+
+        polygonBottom.flip();
+        return new CSG.Mesh(polygonList) 
+    }
+
+    // convert this polygon to a list of triangular polygons
+    //   use the "ear clipping" algorithm to handle non-convex polygons
+    triangularize()
+    {
+        // test: assume convex
+        let triangleArray = []; 
+        for (let i = 3; i <= this.vertices.length; i++)
+        {
+            let triangle = new CSG.Polygon([
+                this.vertices[0].clone(),
+                this.vertices[i-2].clone(),
+                this.vertices[i-1].clone()
+            ]);
+            triangleArray.push( triangle );
+        }
+        return triangleArray;
     }
 }
 
@@ -441,6 +491,8 @@ CSG.createBox = function(centerPoint = new CSG.Vector(0,0,0), xSize=1, ySize=1, 
     return new CSG.Mesh( polygonArray );
 }
 
+// TODO: new version with just (base)Radius, height, numberOfSides
+//  alter with geom transform functions
 // TODO: default values
 CSG.createPyramid = function(apexPoint, baseCenterPoint, baseRadialVector, baseRadius, numberOfSides )
 {
@@ -506,10 +558,35 @@ CSG.createPyramidGeneral = function(apexPoint, basePointArray)
     return new CSG.Mesh( polygonArray );
 }
 
+CSG.createRegularPolygon = function(radius=1, numberOfSides=6)
+{
+    let vertexList = [];
+    let a = 2 * Math.PI / numberOfSides;
+    for (let i = 0; i < numberOfSides; i++)
+    {
+        let vector = new CSG.Vector( radius * Math.sin(i*a), 0, radius * Math.cos(i*a) );
+        vertexList.push( new CSG.Vertex( vector ) );
+    }
+    return new CSG.Polygon( vertexList );
+}
+
+CSG.createStarPolygon = function(outerRadius=2, innerRadius=1, numberOfSides=5)
+{
+    let vertexList = [];
+    let a = 2 * Math.PI / numberOfSides;
+    for (let i = 0; i < numberOfSides; i++)
+    {
+        let innerVector = new CSG.Vector( innerRadius * Math.sin((i-0.5)*a), 0, innerRadius * Math.cos((i-0.5)*a) );
+        vertexList.push( new CSG.Vertex( innerVector ) );
+        let outerVector = new CSG.Vector( outerRadius * Math.sin(i*a), 0, outerRadius * Math.cos(i*a) );
+        vertexList.push( new CSG.Vertex( outerVector ) );
+        
+    }
+    return new CSG.Polygon( vertexList );
+}
+
 // TODO:
-// CSG.createCylinder = function() // can also use for prisms
 // CSG.createSphere = function()
-// CSG.createStar = function()     // to experiment with convexity requirement...
 // CSG.translate(xt,yt,zt), CSG.scale(xs, ys, zs), CSG.rotateX(a), etc. (global transforms only)
 
 // a node in a Binary Space Partitioning tree
@@ -645,38 +722,47 @@ CSG.BSPNode = class
     }
 }
 
-// TODO: rename to "toMeshGeometry"
+// TODO: option to set vertexColors, based on abs value of normal vectors.
 // convert to a three.js compatible THREE.BufferGeometry object, use for rendering as solid
 //  via new THREE.Mesh( csgMesh.toMeshGeometry(), new THREE.MeshStandardMaterial({color:0x0000FF}) );
-CSG.toMeshGeometry = function(csgMesh) 
+CSG.toMeshGeometry = function(csgMesh, triangularize=true) 
 {
     let polygonArray = csgMesh.polygons;  
 
-    // triCount = number of triangles used by this geometry;
-    //   each n-sided polygon contributes (n-2) triangles
-    let triCount = 0;        
-    for (let polygon of polygonArray)
-        triCount += polygon.vertices.length - 2;
+    let triangleArray = [];
 
+    // triangularize the polygons in this array
+    if (triangularize)
+    {
+        for (let polygon of polygonArray)
+        { 
+            let tempArray = polygon.triangularize(); 
+            for (let triangle of tempArray)
+                triangleArray.push( triangle );
+        }
+    }
+    else // polygons were already triangularized
+    {
+        triangleArray = polygonArray;
+    }
+    
     let geom = new THREE.BufferGeometry();
 
     let posArray = [];
     
-    for (let polygon of polygonArray)
+    for (let triangle of triangleArray)
     {
-        let pv = polygon.vertices
-        for (let j = 3; j <= polygon.vertices.length; j++) 
-        {            
-            posArray.push( pv[ 0 ].pos.x, pv[ 0 ].pos.y, pv[ 0 ].pos.z );
-            posArray.push( pv[j-2].pos.x, pv[j-2].pos.y, pv[j-2].pos.z );
-            posArray.push( pv[j-1].pos.x, pv[j-1].pos.y, pv[j-1].pos.z );           
-        }
+        let tv = triangle.vertices;
+        posArray.push( tv[0].pos.x, tv[0].pos.y, tv[0].pos.z );
+        posArray.push( tv[1].pos.x, tv[1].pos.y, tv[1].pos.z );
+        posArray.push( tv[2].pos.x, tv[2].pos.y, tv[2].pos.z );           
     }
 
     geom.setAttribute('position', 
         new THREE.BufferAttribute( new Float32Array(posArray), 3 ) );
     
-    let normalArray = new Array(triCount * 3 * 3).fill(0.0); 
+    // size of array: each triangle has 3 vertices, each vertex has 3 coordinates
+    let normalArray = new Array(triangleArray.length * 3 * 3).fill(0.0); 
     geom.setAttribute('normal', 
         new THREE.BufferAttribute( new Float32Array(normalArray), 3 ) );
 
