@@ -69,32 +69,50 @@ function test()
 
 	let mesh1A = new THREE.Mesh( 
 		csg1.toMeshGeometry(), 
-		new THREE.MeshBasicMaterial({color:0xFF0000, wireframe:true})
+		new THREE.MeshBasicMaterial({color:0xFFCCCC, wireframe:false})
 	);
 	// scene.add(mesh1A);
 
 	let mesh1B = new THREE.LineSegments(  
 		csg1.toLineGeometry(), 
-		new THREE.LineBasicMaterial({color:0xFF0000}) )
+		new THREE.LineBasicMaterial({color:0x880000}) )
 	scene.add(mesh1B);
 
 	let mesh2A = new THREE.Mesh(
 		csg2.toMeshGeometry(), 
-		new THREE.MeshBasicMaterial({color:0x0000FF, wireframe:true})
+		new THREE.MeshBasicMaterial({color:0xCCCCFF, wireframe:false})
 	);
 	// scene.add(mesh2A);
 
 	let mesh2B = new THREE.LineSegments(  
 		csg2.toLineGeometry(), 
-		new THREE.LineBasicMaterial({color:0x0000FF}) )
+		new THREE.LineBasicMaterial({color:0x000088}) )
 	scene.add(mesh2B);
 
-	let geo3 = csg3.toMeshGeometry();	
-	let mat3 = new THREE.MeshStandardMaterial(
-		{color:0xCC88FF, transparent:false, opacity:0.5, wireframe:false} );
-	let mesh3 = new THREE.Mesh(geo3, mat3);
+	let mesh3 = new THREE.Mesh( 
+		csg3.toMeshGeometry(), 
+		new THREE.MeshBasicMaterial({color:0xCCAAFF, wireframe:false} )
+	);
 	scene.add(mesh3);
 	
+	let mesh3B = new THREE.LineSegments(  
+		csg3.toLineGeometry(), 
+		new THREE.LineBasicMaterial({color:0x440088}) )
+	scene.add(mesh3B);
+
+	let csgP = CSG.createStarPolygon();
+	let csg4 = csgP.extrudeToMesh(1);
+
+	let mesh4A = new THREE.Mesh(
+		csg4.toMeshGeometry(), 
+		new THREE.MeshBasicMaterial({color:0x008800, wireframe:true} )
+	);
+	// scene.add(mesh4A);
+	
+	let mesh4B = new THREE.LineSegments(  
+		csg4.toLineGeometry(), 
+		new THREE.LineBasicMaterial({color:0x440088}) );
+	// scene.add(mesh4B);
 }
 
 test();
