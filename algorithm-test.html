@@ -168,10 +168,10 @@ function test()
 
 	// TODO: custom mesh setup. use mesh: lookAt, then translateZ (local?)
 	// very opaque so split is clear
-
+ 
 	let planeMesh = new THREE.Mesh(
 		new THREE.PlaneGeometry(20,20),
-		new THREE.MeshBasicMaterial({color:0x8800FF, transparent:true, opacity:0.5, side:THREE.DoubleSide})
+		new THREE.MeshBasicMaterial({color:0xCCAAFF, transparent:true, opacity:0.95, side:THREE.DoubleSide})
 	);
 	planeMesh.lookAt(normalABC) ;
 	planeMesh.translateZ(distanceABC);
