@@ -134,9 +134,9 @@ function test()
 	let pointA = new THREE.Vector3( 7, 0, 0 );
 	let pointB = new THREE.Vector3( 7, 1, 0 );
 	let pointC = new THREE.Vector3( 7, 0, -1 );
-	let vecAB = new THREE.Vector3().subVectors(pointB, pointA); 
-	let vecAC = new THREE.Vector3().subVectors(pointC, pointA); 
  
+	// mark each point location with a mesh
+
 	let pointMeshA = new THREE.Mesh(
 		new THREE.OctahedronGeometry(0.1), 
 		new THREE.MeshBasicMaterial({color:0x000000, wireframe:true})
@@ -158,12 +158,32 @@ function test()
 	pointMeshC.position.copy( pointC );
 	scene.add(pointMeshC);
 
-
-	// mark each point location with a mesh
-
 	// render the corresponding plane -- as a large rectangle?
 
+	let vecAB = new THREE.Vector3().subVectors(pointB, pointA); 
+	let vecAC = new THREE.Vector3().subVectors(pointC, pointA); 
+
+	let normalABC   = new THREE.Vector3().crossVectors(vecAB, vecAC).normalize();
+	let distanceABC = normalABC.dot( pointA );
+
+	// TODO: custom mesh setup. use mesh: lookAt, then translateZ (local?)
+	// very opaque so split is clear
+
+	let planeMesh = new THREE.Mesh(
+		new THREE.PlaneGeometry(20,20),
+		new THREE.MeshBasicMaterial({color:0x8800FF, transparent:true, opacity:0.5, side:THREE.DoubleSide})
+	);
+	planeMesh.lookAt(normalABC) ;
+	planeMesh.translateZ(distanceABC);
+	scene.add(planeMesh);
+
+	let planeABC = new THREE.Plane(normalABC, -distanceABC);
+	
+
 	// draw a vector indicating the direction of the front side
+
+	let arrowHelper = new THREE.ArrowHelper( normalABC, pointC, 2, 0x000000 );
+	scene.add( arrowHelper );
 
 	// color the original points according to position of plane ---------------------
 
