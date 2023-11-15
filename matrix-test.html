@@ -1,0 +1,232 @@
+<html>
+<head>
+
+</head>
+<body>
+
+<script>
+    
+
+var MATLIB = {};
+
+MATLIB.Matrix = class
+{
+    constructor(numberRows, numberColumns)
+    {
+        this.numberRows = numberRows;
+        this.numberColumns = numberColumns;
+        this.values = [];
+        for (let i = 1; i <= numberRows; i++)
+        {
+            // initial numbers are all 0
+            let row = new Array(numberColumns).fill(0);
+            // push adds it to the collection
+            this.values.push( row );
+        }
+    }
+
+    // print to console
+    print()
+    {
+        for (let i = 0; i < this.values.length; i++)
+        {
+            let row = this.values[i];
+            console.log( "[ " + row.toString() + " ]");
+        }
+    }
+    // rowIndex starts at 1.
+    setRow( rowIndex, rowValuesArray )
+    {
+        // convert to 0-based for coding reasons
+        this.values[rowIndex - 1] = rowValuesArray;
+    }
+
+    swapRows( rowIndexA, rowIndexB )
+    {
+        let rowA = this.values[rowIndexA - 1];
+        let rowB = this.values[rowIndexB - 1];
+
+        this.values[rowIndexA - 1] = rowB;
+        this.values[rowIndexB - 1] = rowA;
+    }
+
+    scaleRow( rowIndex, scalar )
+    {
+        let row = this.values[rowIndex - 1];
+
+        for (let i = 0; i < row.length; i++)
+            row[i] *= scalar;
+
+        this.values[rowIndex - 1] = row;
+    }
+
+    // M.shearRow( row to add to, row to multiply constant by, the constant)
+    shearRow( shearedRowIndex, shearingRowIndex, scalar)
+    {
+        let shearedRow = this.values[shearedRowIndex - 1];
+        let shearingRow = this.values[shearingRowIndex - 1];
+
+        for (let i = 0; i < shearedRow.length; i++)
+            shearedRow[i] += scalar * shearingRow[i];
+
+        this.values[shearedRowIndex - 1] = shearedRow;
+    }
+
+    getColumn( columnIndex )
+    {
+        let column = [];
+
+        for (let i = 0; i < this.numberRows; i++)
+        {
+            let row = this.values[i];
+            column.push( row[columnIndex - 1] );
+        }
+
+        return column;
+    }
+}
+
+// auxillary function. 
+// for consistency with previous functions, using 1-based indices
+// return -1 if all array values are zero (i.e. index does not exist)
+MATLIB.getFirstNonzeroIndex = function( array )
+{
+    for (let i = 0; i < array.length; i++)
+    {
+        if (array[i] != 0)
+            return i + 1;
+    }
+
+    // at this point, all values in array are 0
+    return -1;
+}
+
+// get collection of nonzero values
+MATLIB.getPositiveValueArray = function( array )
+{
+    let nonzeroArray = [];
+
+    for (let i = 0; i < array.length; i++)
+    {
+        let value = array[i];
+        if (array[i] != 0)
+            nonzeroArray.push( Math.abs(value) );
+    }
+
+    return nonzeroArray;
+
+}
+
+MATLIB.gcd = function( a, b )
+{
+    if (a == 0)
+        return b;
+
+    if (b == 0)
+        return a;
+
+    return MATLIB.gcd( b, a % b );
+}
+
+MATLIB.lcm = function( a, b )
+{
+    return (a * b) / MATLIB.gcd(a, b);
+}
+
+// TODO: lcm Vector version!
+
+function test()
+{
+    // specify rows by columns
+    let M = new MATLIB.Matrix( 2, 3 );
+
+    console.log( "Testing new Matrix: ");
+    M.print();
+
+    console.log( "Testing set rows: ");
+
+    M.setRow( 1, [1, 5, 7] );
+    M.setRow( 2, [2, 1, 4] );
+
+    M.print();
+
+    console.log( "Testing swap rows: ");
+    
+    // swap data within matrix
+    M.swapRows( 2, 1 );
+
+    M.print();
+
+    
+    console.log( "Testing scale row: ");
+    
+    // multiply row by scalar
+    M.scaleRow( 1, 5 );
+
+    M.print();
+
+    console.log( "Testing shear row: ");
+
+    // add multiple of one row to another row
+    // M.shearRow( shearedRowIndex, shearingRowIndex, scalar)
+    M.shearRow( 1, 2, 5 );
+
+    M.print();
+
+    
+    let N = new MATLIB.Matrix(4,4);
+    N.setRow(1, [0, 1, 5, 7]);
+    N.setRow(2, [0, 6, 1, 2]);
+    N.setRow(3, [7, 4, 9, 8]);
+    N.setRow(4, [-5, 3, 3, 7]);
+
+    console.log( "New matrix: ");
+    N.print();
+
+    console.log( "Testing get column: ")
+
+    let column1 = N.getColumn( 1 );
+    console.log( column1 );
+
+    console.log( "Testing get first nonzero index");
+
+    let ni = MATLIB.getFirstNonzeroIndex( column1 );
+
+    console.log( ni );
+    
+    console.log( "Testing get positive value array");
+
+    let nzva = MATLIB.getPositiveValueArray( column1 );
+
+    console.log( nzva );
+
+}
+
+// run the test function
+test();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
