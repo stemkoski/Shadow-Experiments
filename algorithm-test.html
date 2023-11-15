@@ -58,25 +58,26 @@ let floor = new THREE.Mesh(
 floor.rotation.x = -Math.PI / 2;
 // scene.add(floor);
 
-scene.add( new THREE.AxesHelper(5) );
+scene.add( new THREE.AxesHelper(5) );  
+
 
 function test()
 {
 	// points defining the polygon shape, listed in counterclockwise order
-	let pointArray = [ 
+	let pointArray = [
 		new THREE.Vector3( 12, 0, 2 ),
 		new THREE.Vector3( 4, 0, 2 ),
 		new THREE.Vector3( 4, 0, 8 ),
 		new THREE.Vector3( 12, 0, 8 ),
 		new THREE.Vector3( 8, 0, 6 ),
 		new THREE.Vector3( 6, 0, 4 )
-	] 
+	];
 
 	
 	let n = pointArray.length;
 	
 	// store mesh objects for later use (will be recolored based on side of plane)
-	let pointMeshArray = [];
+	let pointMeshArray = []; 
 
 	// mark each point location with a mesh ---------------------------------------
 
@@ -84,6 +85,7 @@ function test()
 	{
 		// create a mesh centered at the origin
 		// a mesh object is a combination of a geometry object and a material object
+		// color is irrelevant; will be recolored later
 		let pointMesh = new THREE.Mesh(
 			new THREE.OctahedronGeometry(0.1), 
 			new THREE.MeshBasicMaterial({color:0x000000, wireframe:true})
