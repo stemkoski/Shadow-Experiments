@@ -18,7 +18,7 @@
 
 <script>
 
-// standard scene elements
+// standard scene elements 
 
 let scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xAACCFF );
@@ -72,8 +72,10 @@ function test()
 		new THREE.Vector3( 6, 0, 4 )
 	] 
 
-	// useful?
+	
 	let n = pointArray.length;
+	
+	// store mesh objects for later use (will be recolored based on side of plane)
 	let pointMeshArray = [];
 
 	// mark each point location with a mesh ---------------------------------------
@@ -87,11 +89,16 @@ function test()
 			new THREE.MeshBasicMaterial({color:0x000000, wireframe:true})
 		);
 
+		// get a point from the array
+		let pointP = pointArray[i];
 		// reposition the mesh at the position specified above
-		pointMesh.position.copy( pointArray[i] );
+		pointMesh.position.copy( pointP );
 
 		// add it to the scene
 		scene.add(pointMesh);
+
+		// add it to an array
+		pointMeshArray.push(pointMesh);
 	}
 
 	// create a single line mesh connecting points --------------------------------
@@ -106,11 +113,11 @@ function test()
 
 	for (let i = 0; i < n; i++)
 	{
-		let P = pointArray[ i ];
-		let Q = pointArray[ (i+1)%n ];
-		positionXYZArray.push( P.x, P.y, P.z, Q.x, Q.y, Q.z );
-		// add pink (1, 0.5, 0.5) and blue (0, 0, 1)
-		colorRGBarray.push( 1, 0.5, 0.5, 0, 0, 1 );
+		let pointP = pointArray[ i ];
+		let pointQ = pointArray[ (i+1)%n ];
+		positionXYZArray.push( pointP.x, pointP.y, pointP.z, pointQ.x, pointQ.y, pointQ.z );
+		// add yellow (1, 1, 0) and black (0, 0, 0)
+		colorRGBarray.push( 1, 1, 0, 0, 0, 0 );
 	}
 	
 	let lineGeo = new THREE.BufferGeometry();
@@ -169,36 +176,111 @@ function test()
 	// TODO: custom mesh setup. use mesh: lookAt, then translateZ (local?)
 	// very opaque so split is clear
  
-	let planeMesh = new THREE.Mesh(
+	let planeMeshABC = new THREE.Mesh(
 		new THREE.PlaneGeometry(20,20),
 		new THREE.MeshBasicMaterial({color:0xCCAAFF, transparent:true, opacity:0.95, side:THREE.DoubleSide})
 	);
-	planeMesh.lookAt(normalABC) ;
-	planeMesh.translateZ(distanceABC);
-	scene.add(planeMesh);
+	planeMeshABC.lookAt(normalABC) ;
+	planeMeshABC.translateZ(distanceABC);
+	scene.add(planeMeshABC);
 
 	let planeABC = new THREE.Plane(normalABC, -distanceABC);
 	
 
 	// draw a vector indicating the direction of the front side
 
-	let arrowHelper = new THREE.ArrowHelper( normalABC, pointC, 2, 0x000000 );
+	let arrowHelper = new THREE.ArrowHelper( normalABC, pointC, 2, 0xFF0000 );
 	scene.add( arrowHelper );
 
 	// color the original points according to position of plane ---------------------
 
-	// front: green, back: red, coplanar: yellow.
-    // also store additional data in point variable: side = "FRONT" | "BACK" | "COPLANAR"
+	// precision tolerance
+	let epsilon = 0.00001;
+
+	// front: red, back: blue, coplanar: purple
+    // also store additional data in each point variable: side = "FRONT" | "BACK" | "COPLANAR"
 	
+	for (let i = 0; i < n; i++)
+	{
+		// get a point from the array
+		let pointP = pointArray[i];
+
+		// also get its corresponding mesh
+		let pointMeshP = pointMeshArray[i];
+		
+		// calculate vector from plane to point
+		let vecAP = new THREE.Vector3().subVectors(pointP, pointA); 
+
+		// calculate component (normal is unit vector); use sign to determine side of plane
+		let comp = vecAP.dot( normalABC );
+
+		if (comp > epsilon)
+		{
+			pointP.side = "FRONT";
+			pointMeshP.material.color.set(0xFF0000);
+		}
+		else if (comp < -epsilon)
+		{
+			pointP.side = "BACK";
+			pointMeshP.material.color.set(0x0000fF);
+		}
+		else // (-epsilon < comp && comp < epsilon)
+		{
+			pointP.side = "COPLANAR";
+			pointMeshP.material.color.set(0x8800FF);
+		}
+		// add it to the scene
+		// scene.add(pointMesh);
+	}
 
 	// find any intersection of each segment with the plane ------------------------
 
-	// there is a new intersection if and only if one endpoint is "FRONT", the other "BACK" 
 
-	// intersections are automatically "COPLANAR"
+	
 
+	let pointArray2 = [];
+	let pointMeshArray2 = [];
 
-	// ??? Should the new points be added to the original array? or a new array?
+	for (let i = 0; i < n; i++)
+	{
+		let pointP = pointArray[ i ];
+		let pointMeshP = pointMeshArray[ i ];
+		let pointQ = pointArray[ (i+1)%n ];
+		
+		// keep track of points in new arrays
+		pointArray2.push(pointP);
+		pointMeshArray2.push(pointMeshP);
+        
+		// there is a new intersection ("pointR") if and only if one endpoint is "FRONT", the other "BACK" 
+		if (    (pointP.side == "FRONT" && pointQ.side == "BACK")
+		     || (pointQ.side == "FRONT" && pointP.side == "BACK"))
+		{
+			// given (x,y,z) = L(t) = (Q - P)t + P
+			//   and normalABC dot (x,y,z) = distanceABC...
+			let t = (distanceABC - normalABC.dot(pointP)) / (normalABC.dot(pointQ) - normalABC.dot(pointP));
+			let pointR = new THREE.Vector3().subVectors(pointQ, pointP).multiplyScalar(t).add(pointP); 
+
+			// intersections are automatically "COPLANAR"
+			pointR.side = "COPLANAR";
+
+			// mark each point location with a mesh
+			let pointMeshR = new THREE.Mesh(
+				new THREE.OctahedronGeometry(0.1), 
+				new THREE.MeshBasicMaterial({color:0x8800FF, wireframe:true})
+			);
+			pointMeshR.position.copy( pointR );
+			scene.add(pointMeshR);
+
+			// keep track of new points in new arrays also
+			pointArray2.push(pointR);
+			pointMeshArray2.push(pointMeshR);
+		}
+	}
+
+	// print the numeric data in the JavaScript console for visual debugging
+	console.log(pointArray2)
+
+	// ??? what happens next ???
 
 
 
