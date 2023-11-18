@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>jQuery UI</title>
+	<link rel="stylesheet" href="js/jquery-ui.min.css">
+	<script src="js/external/jquery/jquery.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+	<script src="js/howler.js"></script>
+</head>
+
+<style>
+body
+{
+   padding: 16px;
+   background-color: #F8F8FF;
+}
+
+.border
+{
+   border: 1px solid black;
+   padding: 16px;
+   min-height: 16px;
+}
+
+/* useful if you have a slider and want to add labels */
+.sliderLabel 
+{
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  /* for accurate positioning */
+  margin-left: -10px; /* equal to half of width */
+  margin-top: 20px;   /* equal to height */
+  text-align: center;
+}
+</style>
+
+<body>
+
+<p>Without jQuery UI, buttons look and work like this: </p>
+
+<!-- First, set up elements in HTML, then configure with Javascript -->
+
+<button id="button1">standard button</button>
+
+<div id="div1" class="border"></div>
+
+<script>
+
+function displayMessage()
+{
+   // get element using a basic Javascript function
+   let theDiv = document.getElementById("div1");
+   // set text
+   theDiv.innerText = " Hello, world! ";
+   // append text
+   theDiv.innerText += " Have a nice day! ";
+}
+
+// get element using a basic Javascript function
+let theButton = document.getElementById("button1");
+
+// apply functionality
+theButton.addEventListener("click", displayMessage);
+
+</script>
+
+<br>
+<br>
+<hr>
+<hr>
+<br>
+
+<p> With the jQuery UI library, you can access HTML elements
+    and apply styles and functionality more succinctly. </p>
+
+<!-- First, set up elements in HTML, then configure with Javascript -->
+
+<button id="button2">Button</button>
+
+<div id="div2" class="border"></div>
+
+<script>
+
+// apply jQuery UI styles to elements with given IDs.
+
+// In jQuery, "$" is like a function that retrives one or more document elements
+//  according to id name (precede by "#") or class name (precede by ".")
+
+function displayMessage2()
+{
+   // get element using a jQuery function
+   let div2 = $( "#div2" );
+   // function to set text
+   div2.text( " Hello, world! " );
+   // function to append text
+   div2.append( " Have a nice day! " );
+}
+
+// get element using a jQuery function
+let button2 = $( "#button2" );
+
+// apply formatting
+button2.button();
+
+// apply functionality
+button2.on( "click", displayMessage2 );
+
+</script>
+
+<p> There is also lots of support for additional useful controls: </p>
+
+<!-- First, set up elements in HTML, then configure with Javascript -->
+
+<input type="text" id="myInput" value="type here"></input>
+
+<br><br>
+
+<div id="mySlider"> </div>
+
+<br><br>
+
+<label for="mySelect">Select an option:</label>
+<select id="mySelect">
+  <option>First</option>
+  <option>Second</option>
+  <option>Third</option>
+</select>
+<br><br>
+
+<script>
+
+// text input ---------------------------------------------------
+
+let myInput = $( "#myInput" );
+
+// there's no special ".input()" function (like the ".button()" function) 
+//   to apply formatting, so use the following two lines of code instead:
+myInput.addClass( "ui-widget ui-widget-content ui-corner-all" );
+myInput.css( {width:200, padding:10} );
+
+myInput.on( "input",
+   function(event, ui)
+   {
+     let value = myInput.val();
+     let message = "Current text value: " + value;
+     $("#liveUpdateDisplay").text( message );
+   }
+);
+
+// slider input -------------------------------------------------
+
+let mySlider = $( "#mySlider" );
+
+// apply formatting and control values
+mySlider.slider( {min:1, max:99, step:1, value:50, animate:true} );
+mySlider.css( {left:0, width:220} );
+
+// append text labels by createing new elements, applying CSS class to style
+//   positioning with percentages, and adding to slider object
+let tempLabel = $( "<label> 1 </label>" ).addClass( "sliderLabel" ).css( { left:"0%" } );
+mySlider.append(tempLabel);
+
+tempLabel = $( "<label> 50 </label>" ).addClass( "sliderLabel" ).css( { left:"50%" } );
+mySlider.append(tempLabel);
+
+tempLabel = $( "<label> 99 </label>" ).addClass( "sliderLabel" ).css( { left:"100%" } );
+mySlider.append(tempLabel);
+ 
+// on "slide": continuously activates
+// on "slidechange": only activates when slide stops
+mySlider.on( "slide",
+  function(event, ui)
+  {
+     // this gives the previous value!
+     // let sValue = mySlider.slider( "value" );
+     
+     let value = ui.value;
+     let message = "Current slider value: " + value;
+     $("#liveUpdateDisplay").text( message );
+  }
+);
+
+// selector input ---------------------------------------
+
+let mySelect = $( "#mySelect" );
+
+// apply formatting
+mySelect.selectmenu();
+
+mySelect.on( "selectmenuchange",
+   function(event, ui)
+   {
+     let value =  mySelect.val();
+     let message = "Current select value: " + value;
+     $("#liveUpdateDisplay").text( message );
+   }
+);
+
+// end of input configuration -----------------------------
+
+</script>
+
+<!-- HTML elements to display updated values of elements -->
+
+<p>Live Update:</p>
+<div id="liveUpdateDisplay" class="border"></div>
+
+<br>
+
+<button id="updateButton">Button Update</button>
+<div id="buttonUpdateDisplay" class="border"></div>
+
+<script>
+
+let updateButton = $( "#updateButton" );
+
+// apply formatting
+updateButton.button();
+
+// apply functionality
+updateButton.on( "click",
+   function()
+   {
+      let value = null;
+      let message = "";
+
+      message += "When the button was pressed:";
+      message += "<br>";
+
+      value = myInput.val();
+      message += "Text value: " + value;
+      message += "<br>";
+      
+      value = mySlider.slider( "value" );
+      message += "Slider value: " + value;
+      message += "<br>";
+
+      value =  mySelect.val();
+      message += "Select value: " + value;
+      message += "<br>";
+      
+      // Using .html() instead of .text() so that "<br>" will work;
+      //   this is the only way to handle inserting new lines.
+      $("#buttonUpdateDisplay").html( message );
+   }
+);
+
+</script>
+
+<p> The default page font was also changed to match jQuery UI font (see code).</p>
+
+<script>
+
+// Finally, let's apply the jQuery ui-widget font style to the document
+//   by adding the corresponding CSS class to all tags
+//   that may contain text: paragraph, div, label
+$( "p" ).addClass( "ui-widget" );
+$( "div" ).addClass( "ui-widget" );
+$( "label" ).addClass( "ui-widget" );
+
+// This code is not important.
+let currentDate = new Date();
+let currentTime = currentDate.getHours() + ":" + currentDate.getMinutes() + " " + currentDate.getSeconds() + "s";
+console.log("Current time: " + currentTime);
+
+</script>
+
+</body>
+</html>
