@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Evaluator</title>
+	<link rel="stylesheet" href="js/jquery-ui.min.css">
+	<script src="js/external/jquery/jquery.js"></script>
+	<script src="js/jquery-ui.min.js"></script>
+</head>
+
+<style>
+body
+{
+   padding: 16px;
+   background-color: #F8F8FF;
+}
+
+.border
+{
+   border: 1px solid black;
+   padding: 16px;
+   min-height: 16px;
+}
+
+input, textarea, .outputArea
+{
+    font-family: 'Courier New', Courier, monospace; 
+    font-weight: bold;
+    font-size: 20px;
+    width: 98%;
+    padding: 10px;
+}
+
+.outputArea
+{    
+    overflow-y: scroll;
+    border: 1px solid black;
+    background-color: white;
+}
+
+.rowStyle
+{
+    display: inline-flex;
+    width: 100%;
+}
+
+.leftStyle
+{
+    padding: 4px 12px 4px 4px;
+}
+
+.rightStyle
+{
+    width: 100%; /* use remaining width in flex box */
+    padding: 4px 4px 4px 12px;
+}
+
+.inStyle 
+{
+    color: #000088;
+}
+
+.inputStyle
+{
+    color: #000000;
+    border: 1px solid #888888;
+    background-color: #EEEEEE;
+}
+
+.outStyle 
+{
+    color: #006600;
+}
+
+.outputStyle
+{
+    font-style: italic;
+    color: #000000
+}
+
+.errorStyle
+{
+    font-style: italic;
+    color: #880000;
+    background-color: #FFEEEE;
+}
+
+</style>
+
+<body>
+
+<p> Code </p>
+
+<!-- First, set up elements in HTML, then configure with Javascript -->
+
+<input type="text" id="textInput" value="VAR.x = 337; VAR.x + 1;"></input>
+
+<br><br>
+<button id="runButton">Run Code</button>
+
+<p> Results </p>
+
+<div id="textOutput" class="outputArea" style="height:400px;" value=" ">
+[results will appear here]
+</div>
+
+<script>
+
+// text input ---------------------------------------------------
+
+let textInput  = $( "#textInput" );
+let runButton  = $( "#runButton" ); 
+let textOutput = $( "#textOutput" );
+
+// apply formatting
+runButton.button();
+
+
+var MyObj = class
+{
+    constructor(x, y, z) 
+    {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    toString()
+    {
+        return "[" + this.x + "]";
+    }
+}
+
+// use this namespace for declaring variables:
+var VAR = {};
+
+// TODO: store results of previous inputs and outputs
+// var In = {};
+// var Out = {};
+
+var ioNumber = 0;
+
+function processInput()
+{
+    let inputTotal = textInput.val();
+
+    let inputArray = inputTotal.split(";");
+
+    try 
+    {
+        for (let i = 0; i < inputArray.length; i++)
+        {
+            let input = inputArray[i].trim();
+            
+            // skip over empty input lines
+            if (input.length == 0)
+                continue;
+
+            // if this is the first input, then blank out any existing text present
+            if (ioNumber == 0)
+                textOutput.html("<br>")
+
+            ioNumber++;
+
+            // insert new lines
+
+            textOutput.append( `
+                <div class="rowStyle">
+                    <div class='inStyle leftStyle'><nobr> In [${ioNumber}]: </nobr></div>
+                    <div class='inputStyle rightStyle'> ${input} </div>
+                </div>
+                <div style="height:8px"></div> ` );
+
+            // evaluating input may trigger an exception
+            let output = eval( input );
+            textOutput.append( `
+                <div class="rowStyle">
+                    <div class='outStyle leftStyle'><nobr> Out[${ioNumber}]: </nobr></div>
+                    <div class='outputStyle rightStyle'> ${output} </div>
+                </div>
+                <div style="height:16px"></div> ` );
+        }   
+
+        // clear input area when finished
+        textInput.val(" ");
+    }
+    catch (exception) 
+    {
+        let error = exception.message;
+        textOutput.append( `
+            <div class="rowStyle">
+                <div class='errorStyle rightStyle'> ${error} </div>
+            </div>
+            <div style="height:16px"></div> ` );
+    }
+
+    // scroll to bottom of text area.
+    // pure JS; jQuery objects mess this up somehow.
+    let to = document.getElementById("textOutput");
+    to.scrollTop = to.scrollHeight;
+}
+
+
+textInput.on("keydown",
+    function(event)
+    {
+        if (event.key == "Enter")
+            processInput();
+    }
+);
+
+// apply functionality
+runButton.on( "click", processInput );
+
+
+</script>
+
+
+<script>
+
+// Finally, let's apply the jQuery ui-widget font style to the document
+//   by adding the corresponding CSS class to all tags
+//   that may contain text: paragraph, div, label
+$( "p" ).addClass( "ui-widget" );
+$( "div" ).addClass( "ui-widget" );
+$( "label" ).addClass( "ui-widget" );
+
+// This code is not important.
+let currentDate = new Date();
+let currentTime = currentDate.getHours() + ":" + currentDate.getMinutes() + " " + currentDate.getSeconds() + "s";
+console.log("Current time: " + currentTime);
+
+</script>
+
+</body>
+</html>
