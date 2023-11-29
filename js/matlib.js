@@ -110,41 +110,6 @@ MATLIB.Matrix = class
     }
 
     // random values satisfy:  min <= value < max
-    /* 
-
-    Var.M = new MATLIB.Matrix(3,4).setValuesRandom();
-    Var.A = Var.M;
-    Var.B = Var.M.clone();   
-    Var.M.setRowColumnValue(0,0,88);
-    Var.A;
-    Var.B; 
-    MATLIB.indexStart1;
-    Var.M;
-    Var.M.getRow(0);
-    Var.M.getColumn(2);
-    Var.M.setRow(0, [5,3,3,7]);
-    Var.M.setColumn(2, [4,5,6]);
-    Var.M.swapRows(0, 2);
-    Var.M.scaleRow(1, 2);
-    Var.M.shearRow(1, 2, -2);
-
-    Var.N = new MATLIB.Matrix(3,5).setValuesRandom(-10,10);
-    Var.P = new MATLIB.Matrix(2,5).setValuesRandom(0,1000);
-
-    MATLIB.objectArrayToString( [ Var.M, Var.N, "Can Insert Comments", Var.P ] );
-
-    MATLIB.firstNonzeroIndex( [0,0,-17,0,42] );
-    MATLIB.nonzeroValues( [0,0,-17,0,42] );
-    MATLIB.absoluteValues( [0,0,-17,0,42] );
-
-    MATLIB.gcd( 12, 15 );
-    MATLIB.lcm( 12, 15 );
-    MATLIB.gcdArray( [36, 60, 12] );
-    MATLIB.lcmArray( [36, 60, 12] );
-    
-    
-    */
-
     setValuesRandom(min = 0, max = 10)
     {
         for (let rowIndex = 0; rowIndex < this.numberRows; rowIndex++)
@@ -372,4 +337,85 @@ MATLIB.lcmArray = function( array )
         let b = MATLIB.lcmArray(array.slice(1));
         return ( a * b ) / MATLIB.gcd( a, b );
     }
+}
+
+
+// ******************
+// under construction
+// ******************
+
+// for testing, return a list of all the intermediate calculations 
+MATLIB.rref = function( M )
+{
+    let resultsArray = [];
+
+    resultsArray.push( "initial matrix:" );
+    resultsArray.push( M.clone() );
+
+    // let totalRows    = M.numberRows;
+    // let totalColumns = M.numberColumns;
+
+    /*
+
+    MATLIB.rref( new MATLIB.Matrix([
+        [-1,0,0,1,0,0,0,0],
+        [1,20,5,0,1,0,0,85],
+        [2,-15,10,0,0,1,0,5],
+        [1,-2,-6,0,0,0,1,-14]
+    ]))
+
+    */
+
+    let currentRowIndex = 0;
+    let currentColumnIndex = 0;
+
+    for (let a = 0; a < 4; a++)
+    {
+        let leadingCoeff = M.getRowColumnValue( currentRowIndex, currentColumnIndex );
+        
+        if (leadingCoeff < 0)
+        {
+            M.scaleRow( currentRowIndex, -1 );
+        }
+        
+        for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
+        {
+            if (rowIndex == currentRowIndex)
+                continue;
+
+            let otherCoeff = M.getRowColumnValue( rowIndex, currentColumnIndex );
+            let lcm = MATLIB.lcm(leadingCoeff, otherCoeff);
+            M.scaleRow( rowIndex, lcm/otherCoeff );
+        }
+
+        resultsArray.push( "scaled rows:" );
+        resultsArray.push( M.clone() );
+
+        for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
+        {
+            if (rowIndex == currentRowIndex)
+                continue;
+
+            let otherCoeff = M.getRowColumnValue( rowIndex, currentColumnIndex );
+            let factor = otherCoeff/leadingCoeff;
+            M.shearRow( rowIndex, currentRowIndex, -factor );
+        }
+
+        resultsArray.push( "sheared rows:" );
+        resultsArray.push( M.clone() );
+
+        for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
+        {
+            let gcd = MATLIB.gcdArray( M.getRow(rowIndex) );
+            M.scaleRow( rowIndex, 1/gcd );
+        }
+
+        resultsArray.push( "reduced rows:" );
+        resultsArray.push( M.clone() );
+
+        currentRowIndex++;
+        currentColumnIndex++;
+    }
+
+    return MATLIB.objectArrayToString( resultsArray );
 }

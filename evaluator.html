@@ -96,10 +96,12 @@ input, textarea, .outputArea
 
 <!-- First, set up elements in HTML, then configure with Javascript -->
 
-<input type="text" id="textInput" value="Var.x = 337; Var.x + 1;"></input>
+<textarea id="textInput">1 + 2 * 3</textarea>
 
 <br><br>
 <button id="runButton">Run Code</button>
+
+<button id="testButton">Test MATLIB</button>
 
 <p> Results </p>
 
@@ -113,26 +115,12 @@ input, textarea, .outputArea
 
 let textInput  = $( "#textInput" );
 let runButton  = $( "#runButton" ); 
+let testButton  = $( "#testButton" ); 
 let textOutput = $( "#textOutput" );
 
 // apply formatting
 runButton.button();
-
-
-var MyObj = class
-{
-    constructor(x, y, z) 
-    {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-
-    toString()
-    {
-        return "[" + this.x + "]";
-    }
-}
+testButton.button();
 
 // use this namespace for declaring variables:
 var Var = {};
@@ -217,6 +205,49 @@ textInput.on("keydown",
 
 // apply functionality
 runButton.on( "click", processInput );
+
+// test matrix library
+testButton.on( "click", function()
+{
+    textInput.val(`
+
+    Var.M = new MATLIB.Matrix(3,4).setValuesRandom();
+    Var.A = Var.M;
+    Var.B = Var.M.clone();   
+    Var.M.setRowColumnValue(0,0,88);
+    Var.A;
+    Var.B; 
+    MATLIB.indexStart1;
+    Var.M;
+    Var.M.getRow(0);
+    Var.M.getColumn(2);
+    Var.M.setRow(0, [5,3,3,7]);
+    Var.M.setColumn(2, [4,5,6]);Var.x = 337; Var.x + 1;
+    Var.M.swapRows(0, 2);
+    Var.M.scaleRow(1, 2);
+    Var.M.shearRow(1, 2, -2);
+
+    Var.N = new MATLIB.Matrix(3,5).setValuesRandom(-10,10);
+    Var.P = new MATLIB.Matrix(2,5).setValuesRandom(0,1000);
+
+    MATLIB.objectArrayToString( [ Var.M, Var.N, "Can Insert Comments", Var.P ] );
+
+    MATLIB.firstNonzeroIndex( [0,0,-17,0,42] );
+    MATLIB.nonzeroValues( [0,0,-17,0,42] );
+    MATLIB.absoluteValues( [0,0,-17,0,42] );
+
+    MATLIB.gcd( 12, 15 );
+    MATLIB.lcm( 12, 15 );
+    MATLIB.gcdArray( [36, 60, 12] );
+    MATLIB.lcmArray( [36, 60, 12] );
+
+    Var.M = new MATLIB.Matrix(4, 8).setValuesRandom(1, 10);
+    MATLIB.rref( Var.M );
+
+    `);
+
+    processInput();
+});
 
 
 </script>
