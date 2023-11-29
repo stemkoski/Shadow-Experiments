@@ -342,7 +342,28 @@ MATLIB.gcd = function( a, b )
     return MATLIB.gcd( b, a % b );
 }
 
+MATLIB.gcdArray = function( array )
+{
+    if ( array.length == 1 )
+        return array[0];
+    else
+        return MATLIB.gcd( array[0], MATLIB.gcdArray(array.slice(1)) );
+}
+
 MATLIB.lcm = function( a, b )
 {
     return (a * b) / MATLIB.gcd(a, b);
+}
+
+// reference: https://www.geeksforgeeks.org/lcm-of-given-array-elements/
+MATLIB.lcmArray = function( array )
+{
+    if ( array.length == 1 )
+        return array[0];
+    else
+    {
+        let a = array[0];
+        let b = MATLIB.lcmArray(array.slice(1));
+        return ( a * b ) / MATLIB.gcd( a, b );
+    }
 }
