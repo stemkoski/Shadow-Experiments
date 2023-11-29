@@ -137,6 +137,12 @@ MATLIB.Matrix = class
     MATLIB.nonzeroValues( [0,0,-17,0,42] );
     MATLIB.absoluteValues( [0,0,-17,0,42] );
 
+    MATLIB.gcd( 12, 15 );
+    MATLIB.lcm( 12, 15 );
+    MATLIB.gcdArray( [36, 60, 12] );
+    MATLIB.lcmArray( [36, 60, 12] );
+    
+    
     */
 
     setValuesRandom(min = 0, max = 10)
