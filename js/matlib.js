@@ -176,9 +176,6 @@ MATLIB.Matrix = class
 
     getRow( rowIndex )
     {
-        if (MATLIB.indexStart1)
-            rowIndex--;
-
         let row = [];
 
         for (let columnIndex = 0; columnIndex < this.numberColumns; columnIndex++)
@@ -189,9 +186,6 @@ MATLIB.Matrix = class
 
     setRow( rowIndex, valuesArray )
     {
-        if (MATLIB.indexStart1)
-            rowIndex--;
-
         for (let columnIndex = 0; columnIndex < this.numberColumns; columnIndex++)
             this.setRowColumnValue( rowIndex, columnIndex, valuesArray[columnIndex] );
 
@@ -200,9 +194,6 @@ MATLIB.Matrix = class
 
     getColumn( columnIndex )
     {
-        if (MATLIB.indexStart1)
-            columnIndex--;
-
         let column = [];
 
         for (let rowIndex = 0; rowIndex < this.numberRows; rowIndex++)
@@ -213,9 +204,6 @@ MATLIB.Matrix = class
 
     setColumn( columnIndex, valuesArray )
     {
-        if (MATLIB.indexStart1)
-            columnIndex--;
-
         for (let rowIndex = 0; rowIndex < this.numberRows; rowIndex++)
             this.setRowColumnValue( rowIndex, columnIndex, valuesArray[rowIndex] );
 
@@ -258,7 +246,6 @@ MATLIB.Matrix = class
 
         return this;
     }
-
 
 }
 
@@ -311,7 +298,7 @@ MATLIB.firstNonzeroIndex = function( array )
         if (array[index] != 0)
         {
             if (MATLIB.indexStart1)
-                index--;
+                index++;
 
             return index;
         }
