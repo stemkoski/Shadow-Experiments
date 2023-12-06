@@ -419,3 +419,143 @@ MATLIB.rref = function( M )
 
     return MATLIB.objectArrayToString( resultsArray );
 }
+
+
+// new library to process rational numbers exactly
+var FRACLIB = {};
+
+FRACLIB.Fraction = class
+{
+    constructor(numerator=0, denominator=1)
+    {
+        this.numerator = numerator;
+        this.denominator = denominator;
+        this.reduce();
+    }
+
+    toString()
+    {
+        return this.numerator + "/" + this.denominator;
+    }
+
+    copy( otherFraction )
+    {
+        this.numerator = otherFraction.numerator;
+        this.denominator = otherFraction.denominator;
+        return this;
+    }
+
+    clone()
+    {
+        return new FRACLIB.Fraction().copy( this );
+    }
+
+    reduce()
+    {
+        let gcd = FRACLIB.gcd(this.numerator, this.denominator);
+        this.numerator /= gcd;
+        this.denominator /= gcd;
+
+        // no negative numbers in denominator
+        if (this.denominator < 0)
+        {
+            this.numerator *= -1;
+            this.denominator *= -1;
+        }
+
+        return this;
+    }
+
+    add( otherFraction )
+    {
+        // TODO: if otherFraction type number....
+
+        // else if otherFraction type Fraction...
+        let a = this.numerator;
+        let b = this.denominator;
+        let c = otherFraction.numerator;
+        let d = otherFraction.denominator;
+        this.numerator = a*d + b*c;
+        this.denominator = b*d;
+        return this.reduce();
+    }
+
+    sub( otherFraction )
+    {
+        let a = this.numerator;
+        let b = this.denominator;
+        let c = otherFraction.numerator;
+        let d = otherFraction.denominator;
+        this.numerator = a*d - b*c;
+        this.denominator = b*d;
+        return this.reduce();
+    }
+
+    negate()
+    {
+        this.numerator *= -1;
+        this.reduce();
+        return this.reduce();
+    }
+
+    mult( otherFraction )
+    {
+        this.numerator *= otherFraction.numerator;
+        this.denominator *= otherFraction.denominator;
+        this.reduce();
+        return this.reduce();
+    }
+
+    div( otherFraction )
+    {
+        this.numerator *= otherFraction.denominator;
+        this.denominator *= otherFraction.numerator;
+        this.reduce();
+        return this.reduce();
+    }
+
+    invert()
+    {
+        let n = this.numerator;
+        let d = this.denominator;
+        this.numerator = d;
+        this.denominator = n;
+        return this.reduce();
+    }
+}
+
+FRACLIB.addFractions = function(fractionA, fractionB)
+{
+    return fractionA.clone().add(fractionB);
+}
+
+FRACLIB.subFractions = function(fractionA, fractionB)
+{
+    return fractionA.clone().sub(fractionB);
+}
+
+FRACLIB.multFractions = function(fractionA, fractionB)
+{
+    return fractionA.clone().mult(fractionB);
+}
+
+FRACLIB.divFractions = function(fractionA, fractionB)
+{
+    return fractionA.clone().div(fractionB);
+}
+
+FRACLIB.gcd = function( a, b )
+{
+    if (a == 0)
+        return b;
+
+    if (b == 0)
+        return a;
+
+    return MATLIB.gcd( b, a % b );
+}
+
+FRACLIB.lcm = function( a, b )
+{
+    return (a * b) / MATLIB.gcd(a, b);
+}

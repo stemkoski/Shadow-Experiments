@@ -103,6 +103,8 @@ input, textarea, .outputArea
 
 <button id="testButton">Test MATLIB</button>
 
+<button id="testButton2">Test FRACLIB</button>
+
 <p> Results </p>
 
 <div id="textOutput" class="outputArea" style="height: 600px;" value=" ">
@@ -116,11 +118,13 @@ input, textarea, .outputArea
 let textInput  = $( "#textInput" );
 let runButton  = $( "#runButton" ); 
 let testButton  = $( "#testButton" ); 
+let testButton2  = $( "#testButton2" ); 
 let textOutput = $( "#textOutput" );
 
 // apply formatting
 runButton.button();
 testButton.button();
+testButton2.button();
 
 // use this namespace for declaring variables:
 var Var = {};
@@ -249,6 +253,29 @@ testButton.on( "click", function()
     processInput();
 });
 
+// test fraction library
+testButton2.on( "click", function()
+{
+    textInput.val(`
+
+    Var.a = new FRACLIB.Fraction(2,3);
+    Var.b = new FRACLIB.Fraction(4,5);
+    Var.c = new FRACLIB.Fraction(5);
+    Var.c.add( Var.a );
+    Var.c;
+    FRACLIB.addFractions( Var.a, Var.b );
+    FRACLIB.subFractions( Var.a, Var.b );
+    FRACLIB.multFractions( Var.a, Var.b );
+    FRACLIB.divFractions( Var.a, Var.b );
+    
+    Var.d = Var.a.clone();
+    Var.d.negate();
+    Var.d.invert();
+    
+    `);
+
+    processInput();
+});
 
 </script>
 
