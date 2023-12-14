@@ -304,13 +304,15 @@ MATLIB.absoluteValues = function( array )
 
 MATLIB.gcd = function( a, b )
 {
+    a = Math.abs(a);
+    b = Math.abs(b);
+    
     if (a == 0)
         return b;
-
-    if (b == 0)
+    else if (b == 0)
         return a;
-
-    return MATLIB.gcd( b, a % b );
+    else
+        return MATLIB.gcd( b, a % b );
 }
 
 MATLIB.gcdArray = function( array )
@@ -369,12 +371,16 @@ MATLIB.rref = function( M )
     let currentRowIndex = 0;
     let currentColumnIndex = 0;
 
-    for (let a = 0; a < 4; a++)
+    while (true)
     {
+        if (currentRowIndex >= M.numberRows || currentColumnIndex >= M.numberColumns)
+            break;
+
         let leadingCoeff = M.getRowColumnValue( currentRowIndex, currentColumnIndex );
         
         if (leadingCoeff < 0)
         {
+            leadingCoeff *= -1;
             M.scaleRow( currentRowIndex, -1 );
         }
         
@@ -384,6 +390,12 @@ MATLIB.rref = function( M )
                 continue;
 
             let otherCoeff = M.getRowColumnValue( rowIndex, currentColumnIndex );
+            
+            // if value above or below leadingCoeff is 0, that row does not need to be sheared
+            //   (or scaled in preparation for integer-based shearing); skip it
+            if (otherCoeff == 0)
+                continue;
+
             let lcm = MATLIB.lcm(leadingCoeff, otherCoeff);
             M.scaleRow( rowIndex, lcm/otherCoeff );
         }
@@ -406,8 +418,15 @@ MATLIB.rref = function( M )
 
         for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
         {
-            let gcd = MATLIB.gcdArray( M.getRow(rowIndex) );
+            let row = M.getRow(rowIndex);
+            let gcd = MATLIB.gcdArray( row );
+
+            console.log("debug data")
+            console.log(row)
+            console.log( gcd )
+            console.log( 1/gcd )
             M.scaleRow( rowIndex, 1/gcd );
+            console.log( M.getRow(rowIndex) )
         }
 
         resultsArray.push( "reduced rows:" );
