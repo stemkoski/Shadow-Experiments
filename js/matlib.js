@@ -378,14 +378,43 @@ MATLIB.rref = function( M )
 
         let leadingCoeff = M.getRowColumnValue( currentRowIndex, currentColumnIndex );
         
+        // TODO: FIX ME -- what if leadingCoeff is == 0?
+
         if (leadingCoeff < 0)
         {
             leadingCoeff *= -1;
             M.scaleRow( currentRowIndex, -1 );
         }
         
+        if (leadingCoeff == 0)
+        {
+            let nonZeroRowIndex = -1;
+            for (let i = currentRowIndex + 1; i < M.numberRows; i++)
+            {
+                leadingCoeff = M.getRowColumnValue( currentRowIndex, currentColumnIndex );
+                if (leadingCoeff != 0)
+                {
+                    nonZeroRowIndex = i;
+                    break;
+                }
+            }
+
+            if (nonZeroRowIndex != -1)
+            {
+                M.swapRows(nonZeroRowIndex, currentRowIndex);
+                // TODO: add "swapping rows" message
+            }
+            else
+            {
+                currentColumnIndex++;
+                // TODO: add "no available rows to swap" message
+                continue;
+            }
+        }
+
         for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
         {
+            console.log( "I'm working on scaling row " + rowIndex )
             if (rowIndex == currentRowIndex)
                 continue;
 
@@ -396,36 +425,60 @@ MATLIB.rref = function( M )
             if (otherCoeff == 0)
                 continue;
 
+            console.log( "whats the lcm of " + leadingCoeff + " and " + otherCoeff);
             let lcm = MATLIB.lcm(leadingCoeff, otherCoeff);
+            console.log( "it's " + lcm )
             M.scaleRow( rowIndex, lcm/otherCoeff );
+            let row = M.getRow(rowIndex)
+            console.log( " and the row is ")
+            console.log(row)
         }
 
+        console.log("done scaling rows.")
         resultsArray.push( "scaled rows:" );
         resultsArray.push( M.clone() );
 
         for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
         {
+            console.log("I'm shearing row " + rowIndex)
             if (rowIndex == currentRowIndex)
                 continue;
 
+            let row = M.getRow( rowIndex )
+            console.log(" which is ")
+            console.log( row )
             let otherCoeff = M.getRowColumnValue( rowIndex, currentColumnIndex );
             let factor = otherCoeff/leadingCoeff;
+            console.log("by a factor of " + factor)
             M.shearRow( rowIndex, currentRowIndex, -factor );
+
         }
 
+        console.log("done shearing rows.")
         resultsArray.push( "sheared rows:" );
         resultsArray.push( M.clone() );
 
         for (let rowIndex = 0; rowIndex < M.numberRows; rowIndex++ )
         {
             let row = M.getRow(rowIndex);
+            console.log("I'm reducing row " + rowIndex)
+            console.log(" which is: ")
+            console.log(row)
             let gcd = MATLIB.gcdArray( row );
 
             console.log("debug data")
             console.log(row)
             console.log( gcd )
             console.log( 1/gcd )
-            M.scaleRow( rowIndex, 1/gcd );
+            if ( gcd != 0 )
+            {
+                console.log( "its okay to divide by " + gcd)
+                M.scaleRow( rowIndex, 1/gcd );
+            }
+            else
+            {
+                console.log("i don't want to divide by " + gcd)
+            }
             console.log( M.getRow(rowIndex) )
         }
 
