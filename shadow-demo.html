@@ -40,6 +40,14 @@
 		<input type="radio" name="radioX" id="radioX2">
 		<label for="radioX3" id="radioX3L">Circle</label>
 		<input type="radio" name="radioX" id="radioX3">
+		<label for="radioX4" id="radioX4L">Star5</label>
+		<input type="radio" name="radioX" id="radioX4">
+		<label for="radioX5" id="radioX5L">A</label>
+		<input type="radio" name="radioX" id="radioX5">
+		<label for="radioX6" id="radioX6L">U</label>
+		<input type="radio" name="radioX" id="radioX6">
+		<label for="radioX7" id="radioX7L">Smile</label>
+		<input type="radio" name="radioX" id="radioX7">
 	</fieldset>
 
 	<fieldset id="groupY">
@@ -50,6 +58,15 @@
 		<input type="radio" name="radioY" id="radioY2">
 		<label for="radioY3" id="radioY3L">Circle</label>
 		<input type="radio" name="radioY" id="radioY3">
+		<label for="radioY4" id="radioY4L">Star5</label>
+		<input type="radio" name="radioY" id="radioY4">
+		<label for="radioY5" id="radioY5L">A</label>
+		<input type="radio" name="radioY" id="radioY5">
+		<label for="radioY6" id="radioY6L">U</label>
+		<input type="radio" name="radioY" id="radioY6">
+		<label for="radioY7" id="radioY7L">Smile</label>
+		<input type="radio" name="radioY" id="radioY7">
+
 	</fieldset>
 
 	<fieldset id="groupZ">
@@ -60,6 +77,15 @@
 		<input type="radio" name="radioZ" id="radioZ2">
 		<label for="radioZ3" id="radioZ3L">Circle</label>
 		<input type="radio" name="radioZ" id="radioZ3">
+		<label for="radioZ4" id="radioZ4L">Star5</label>
+		<input type="radio" name="radioZ" id="radioZ4">
+		<label for="radioZ5" id="radioZ5L">A</label>
+		<input type="radio" name="radioZ" id="radioZ5">
+		<label for="radioZ6" id="radioZ6L">U</label>
+		<input type="radio" name="radioZ" id="radioZ6">
+		<label for="radioZ7" id="radioZ7L">Smile</label>
+		<input type="radio" name="radioZ" id="radioZ7">
+
 	</fieldset>
 
 </div>
@@ -75,13 +101,20 @@ radioSelect.on( "click",
    function(event, ui)
    {
 
-
-	console.log( event.target.name )
-
+	let axis = event.target.name;
 	let label = $( "#" + event.target.id + "L" );
-	console.log( label[0].innerText.trim() )
-	
+	let shapeName = label[0].innerText.trim();
 
+	if (axis == "radioX")
+		xMeshName = shapeName;
+	if (axis == "radioY")
+		yMeshName = shapeName;
+	if (axis == "radioZ")
+		zMeshName = shapeName;
+
+	meshGroup.clear();
+
+	createMesh();
    }
 );
 </script>
