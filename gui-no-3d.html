@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>three.js example</title>
+	<style>
+		.lil-gui
+		{
+			--font-size: 16px;
+			--input-font-size: 14px;
+	    --padding: 8px;
+	    --spacing: 8px;
+	    --slider-knob-width: 3px;
+  	}
+	</style>
+</head>
+
+<body>
+
+<script src="js/lil-gui.js"></script>
+
+<script>
+// integrated gui
+
+let GUI = lil.GUI;
+let gui = new GUI();
+
+let guiParams = { 
+	speed: 0.5, 
+	name: "Stem", 
+};
+
+guiParams.checkSpeed = function()
+{
+	console.log("your new speed is " + guiParams.speed)
+}
+
+guiParams.funcHi = function()
+{
+	console.log("hi " + guiParams.name);
+}
+
+let folder1 = gui.addFolder('Another Folder')
+
+// adding a slider
+folder1.add( guiParams, 'speed', 0, 1, 0.01)
+				  .name("check speed")
+				  .onChange( guiParams.checkSpeed );
+
+// adding an input box
+folder1.add( guiParams, "name" )
+			 .name("your name");
+
+// adding a button
+folder1.add( guiParams, "funcHi" )
+			 .name("say hi");
+
+folder1.open();
+
+
+function update()
+{
+	// code removed for clarity
+}
+
+function render()
+{
+	// code removed for clarity
+}
+
+function onWindowResize()
+{
+	// code removed for clarity
+}
+
+function loop() 
+{
+	requestAnimationFrame( loop );
+	update();
+	render();
+};
+
+loop();
+
+</script>
+</body>
+</html>
