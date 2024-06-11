@@ -139,54 +139,128 @@ let polygonPointArray = [
 	new THREE.Vector3(5,3,0)
 ];
 
-for (let i = 0; i < polygonPointArray.length; i++)
+// set of points within YZ-plane
+let polygonPointArray2 = [
+	new THREE.Vector3(0,1,1),	
+	new THREE.Vector3(0,4,2),	
+	new THREE.Vector3(0,2,3),	
+	new THREE.Vector3(0,3,4),	
+	new THREE.Vector3(0,0,5)
+];
+
+function graphPolygon( pointArray, polygonColor=0x000000)
 {
-	let point = new THREE.Mesh( 
-		new THREE.SphereGeometry( 0.02 ),
-		new THREE.MeshBasicMaterial( {color: 0x000044} )
+	// graph polygon points
+	for (let i = 0; i < pointArray.length; i++)
+	{
+		let point = new THREE.Mesh( 
+			new THREE.SphereGeometry( 0.02 ),
+			new THREE.MeshBasicMaterial( {color: polygonColor} )
+		);
+		point.position.copy( pointArray[i] );
+		scene.add(point);
+	}
+
+	// turn into a loop
+	pointArray.push( pointArray[0] );
+
+	// graph polygon lines
+	let polygonLines = new THREE.Line( 
+		new THREE.BufferGeometry().setFromPoints( pointArray ), 
+		new THREE.LineBasicMaterial( {color: polygonColor} )
 	);
-	point.position.copy( polygonPointArray[i] );
-	scene.add(point);
+	scene.add( polygonLines );
 }
 
-// turn into a loop
-polygonPointArray.push( polygonPointArray[0] );
+graphPolygon( polygonPointArray, 0x000088 );
+graphPolygon( polygonPointArray2, 0x880000 );
 
-let polygonLines = new THREE.Line( 
-	new THREE.BufferGeometry().setFromPoints( polygonPointArray ), 
-	new THREE.LineBasicMaterial( {color: 0x0000FF} )
-);
-scene.add( polygonLines );
 
 let linePoints = [ new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0) ];
 let ceilingLine = new THREE.Line(
 	new THREE.BufferGeometry().setFromPoints( linePoints ), 
-	new THREE.LineBasicMaterial( {color: 0x000000} )
+	new THREE.LineBasicMaterial( {color: 0x000044} )
 );
 scene.add( ceilingLine );
 
+let ceilingLine2 = new THREE.Line(
+	new THREE.BufferGeometry().setFromPoints( linePoints ), 
+	new THREE.LineBasicMaterial( {color: 0x440000} )
+);
+scene.add( ceilingLine2 );
+
+
+// should really be called segmen-segment intersection
+// line1, line2 = {slopeVec, pointVec, paramMin, paramMax}
+function lineLineIntersection(line1, line2, debug=false)
+{
+	// error tolerance
+	let epsilon = 0.01;
+
+	if (debug)
+	{
+		console.log("lines")
+		console.log(line1)
+		console.log(line2)
+	}
+
+	// line1: L1(t) = m1*t + p1
+	// line2: L2(u) = m2*u + p2
+	let m1 = line1.slopeVec, p1 = line1.pointVec, tMin = line1.paramMin, tMax = line1.paramMax;
+	let m2 = line2.slopeVec, p2 = line2.pointVec, uMin = line2.paramMin, uMax = line2.paramMax;
+	let n = new THREE.Vector3().crossVectors(m1, m2);
+	let n1 = new THREE.Vector3().crossVectors(m1, n);
+	let n2 = new THREE.Vector3().crossVectors(m2, n);
+
+	let f1 = new THREE.Vector3().subVectors(p2, p1).dot( n2 ) / m1.dot(n2);
+	let f2 = new THREE.Vector3().subVectors(p1, p2).dot( n1 ) / m2.dot(n1);
+
+	let c1 = new THREE.Vector3().addVectors(p1, new THREE.Vector3().copy(m1).multiplyScalar(f1) );
+	let c2 = new THREE.Vector3().addVectors(p2, new THREE.Vector3().copy(m2).multiplyScalar(f2) );
+
+	let d = new THREE.Vector3().subVectors(c1, c2).length();
+
+	console.log(d)
+}
+
 // calculate intersection (if any) of parametrically defined line segments
 // line1, line2 = {slopeVec, pointVec, paramMin, paramMax}
-function intersection(line1, line2)
+function intersection(line1, line2, debug=false)
 {
+	if (debug)
+	{
+		console.log("lines")
+		console.log(line1)
+		console.log(line2)
+	}
+
 	// line1: L(t) = mt + p
 	// line2: K(u) = nu + q
 	let m = line1.slopeVec, p = line1.pointVec, tMin = line1.paramMin, tMax = line1.paramMax;
 	let n = line2.slopeVec, q = line2.pointVec, uMin = line2.paramMin, uMax = line2.paramMax;
 	// cramer's rule
 	let detA = -m.x * n.y + m.y * n.x;
+
+	if (debug)
+		console.log("detA: " + detA)
 	if (detA == 0)
 		return null;
 	
 	let detA1b = -(q.x - p.x) * n.y + (q.y - p.y) * n.x;
 	let t = detA1b / detA;
-	// console.log( "t: " + t )
+
+	if (debug)
+		console.log( "t: " + t )
+
 	if ( !(tMin <= t && t <= tMax) )
 		return null;
 	
 	let detA2b = -m.x * (q.y - p.y) + m.y * (q.x - p.x);
 	let u = detA2b / detA;
-	// console.log( "u: " + u)
+
+	if (debug)
+		console.log( "u: " + u)
+
 	if ( !(uMin <= u && u <= uMax))
 		return null;
 
@@ -211,14 +285,19 @@ guiParams.changeParam = function()
 {
 	zPoint.position.set(0, guiParams.ceilingY, 0);
     let posAtt = ceilingLine.geometry.getAttribute('position');
-	
+	let posAtt2 = ceilingLine2.geometry.getAttribute('position');
+
 	let p = new THREE.Vector3(0, guiParams.ceilingY, 0);
+
+	/*
+	// use if not recalculating automatically
 	let m = new THREE.Vector3(Math.cos(guiParams.slopeAngle), Math.sin(guiParams.slopeAngle), 0);
 	m.multiplyScalar( 6 );
 
 	posAtt.setXYZ(0, p.x, p.y, p.z);
 	posAtt.setXYZ(1, p.x + m.x, p.y + m.y, p.z + m.z);
 	posAtt.needsUpdate = true;
+	*/
 
 	/*
 	for (let i = 0; i < polygonPointArray.length - 1; i++)
@@ -243,31 +322,43 @@ guiParams.changeParam = function()
 	*/
 
 	let slopeAngle = findCeilingSlope();
-	console.log(slopeAngle);
+	let slopeAngle2 = findCeilingSlope2();
+	console.log(slopeAngle2)
+	// console.log(slopeAngle);
 	if (true)
 	{
 		let m = new THREE.Vector3(Math.cos(slopeAngle), Math.sin(slopeAngle), 0);
-		m.multiplyScalar( 100 );
+		m.multiplyScalar( 10 );
 
 		posAtt.setXYZ(0, p.x, p.y, p.z);
 		posAtt.setXYZ(1, p.x + m.x, p.y + m.y, p.z + m.z);
 		posAtt.needsUpdate = true;
+
+		let m2 = new THREE.Vector3(0, Math.sin(slopeAngle2), Math.cos(slopeAngle2));
+		m2.multiplyScalar( 10 );
+
+		posAtt2.setXYZ(0, p.x, p.y, p.z);
+		posAtt2.setXYZ(1, p.x + m2.x, p.y + m2.y, p.z + m2.z);
+		posAtt2.needsUpdate = true;
+
 	}
 }
 
-function checkForIntersection(p, m)
+function checkForIntersection(p, m, pointArray, debug=false)
 {
-	for (let i = 0; i < polygonPointArray.length - 1; i++)
+	for (let i = 0; i < pointArray.length - 1; i++)
 	{
-		let q = polygonPointArray[i];
-		let q1 = polygonPointArray[i+1];
+		let q = pointArray[i];
+		let q1 = pointArray[i+1];
 		let n = new THREE.Vector3().subVectors(q, q1);
 		
 		let intersectionPoint = intersection(
 			{slopeVec:m, pointVec:p, paramMin:0, paramMax:1},
 			{slopeVec:n, pointVec:q, paramMin:0, paramMax:1},
+			debug
 		);
 		
+		// console.log(intersectionPoint)
 		if (intersectionPoint != null)
 			return intersectionPoint;
 	}
@@ -277,15 +368,34 @@ function checkForIntersection(p, m)
 
 function findCeilingSlope()
 {
-	for (let slopeAngle = 1.57; slopeAngle >= -1.57; slopeAngle -= 0.01)
+	let delta = 0.01;
+	for (let slopeAngle = 1.57; slopeAngle >= -1.57; slopeAngle -= delta)
 	{
 		let p = new THREE.Vector3(0, guiParams.ceilingY, 0);
 		let m = new THREE.Vector3(Math.cos(slopeAngle), Math.sin(slopeAngle), 0);
-		m.multiplyScalar( 100 );
+		m.multiplyScalar( 10 );
 		
-		let intersectionData = checkForIntersection(p, m);
+		let intersectionData = checkForIntersection(p, m, polygonPointArray);
 		if (intersectionData != null)
-			return slopeAngle + 0.01;
+			return slopeAngle + delta;
+	}
+
+	return null;
+}
+
+function findCeilingSlope2()
+{
+	console.log("find slope 2")
+	let delta = 0.01;
+	for (let slopeAngle = 1.57; slopeAngle >= -1.57; slopeAngle -= delta)
+	{
+		let p = new THREE.Vector3(0, guiParams.ceilingY, 0);
+		let m = new THREE.Vector3(0, Math.sin(slopeAngle), Math.cos(slopeAngle));
+		m.multiplyScalar( 10 );
+		console.log(m)
+		let intersectionData = checkForIntersection(p, m, polygonPointArray2, false);
+		if (intersectionData != null)
+			return slopeAngle + delta;
 	}
 
 	return null;
@@ -293,7 +403,7 @@ function findCeilingSlope()
 
 
 // adding a slider
-gui.add( guiParams, 'ceilingY', -20.0, 6.0, 0.01)
+gui.add( guiParams, 'ceilingY', 0.0, 6.0, 0.01)
 	  .name("ceiling Y")
 	  .onChange( guiParams.changeParam );
 
