@@ -189,26 +189,19 @@ let ceilingLine2 = new THREE.Line(
 );
 scene.add( ceilingLine2 );
 
-
-// should really be called segmen-segment intersection
-// line1, line2 = {slopeVec, pointVec, paramMin, paramMax}
-function lineLineIntersection(line1, line2, debug=false)
+// params: line1, line2 = {slopeVec, pointVec}
+// returns: {point1, point2}
+//   where pointN is the point on lineN closest to the other line.
+function closestPoints(line1, line2, debug=false)
 {
-	// error tolerance
-	let epsilon = 0.01;
-
-	if (debug)
-	{
-		console.log("lines")
-		console.log(line1)
-		console.log(line2)
-	}
-
 	// line1: L1(t) = m1*t + p1
 	// line2: L2(u) = m2*u + p2
-	let m1 = line1.slopeVec, p1 = line1.pointVec, tMin = line1.paramMin, tMax = line1.paramMax;
-	let m2 = line2.slopeVec, p2 = line2.pointVec, uMin = line2.paramMin, uMax = line2.paramMax;
+	let m1 = line1.slopeVec, p1 = line1.pointVec;
+	let m2 = line2.slopeVec, p2 = line2.pointVec;
+
 	let n = new THREE.Vector3().crossVectors(m1, m2);
+	// TODO: if n = <0,0,0> then lines are parallel, no unique solution exists - return null?
+
 	let n1 = new THREE.Vector3().crossVectors(m1, n);
 	let n2 = new THREE.Vector3().crossVectors(m2, n);
 
@@ -218,9 +211,40 @@ function lineLineIntersection(line1, line2, debug=false)
 	let c1 = new THREE.Vector3().addVectors(p1, new THREE.Vector3().copy(m1).multiplyScalar(f1) );
 	let c2 = new THREE.Vector3().addVectors(p2, new THREE.Vector3().copy(m2).multiplyScalar(f2) );
 
-	let d = new THREE.Vector3().subVectors(c1, c2).length();
+	return {point1: c1, point2: c2};
+}
 
-	console.log(d)
+// params: line1, line2 = {slopeVec, pointVec}
+// returns: point of intersection, if closest points are within epsilon of each other
+function lineLineIntersection(line1, line2, epsilon=0.01, debug=false)
+{
+	if (debug)
+	{
+		console.log("lines")
+		console.log(line1)
+		console.log(line2)
+	}
+
+	let closest = closestPoints(line1, line2);
+
+	// if lines are parallel, there is no unique pair of closest points
+	//   and this computation is meaningless
+	if ( closest == null )
+		return null;
+
+	let d = new THREE.Vector3().subVectors(closest.point1, closest.point2).length();
+
+	// console.log(d)
+
+	if ( d < epsilon )
+	{
+		let midpoint = new THREE.Vector3().addVectors(closest.point1, closest.point2).multiplyScalar(0.5);
+		return midpoint;
+	}
+	else
+	{
+		return null;
+	}
 }
 
 // calculate intersection (if any) of parametrically defined line segments
