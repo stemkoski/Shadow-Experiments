@@ -120,11 +120,9 @@ let floorLineMaterial  = new THREE.LineBasicMaterial( {color: floorColor} );
 
 let ceilingPointMesh = new THREE.Mesh( pointGeometry, ceilingPointMaterial );
 scene.add(ceilingPointMesh);
-ceilingPointMesh.position.set(0, 5, 0);
 
 let floorPointMesh = new THREE.Mesh( pointGeometry, floorPointMaterial );
 scene.add(floorPointMesh);
-floorPointMesh.position.set(0, -1, 0);
 
 let linePoints = [ new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0) ];
 
@@ -154,6 +152,20 @@ floorGridHelper.material.transparent = true;
 floorGridHelper.material.opacity = 0.4;
 scene.add( floorGridHelper );
 floorGridHelper.lookAt( new THREE.Vector3(0,1,0) );
+
+// light boundary mesh, light line, light position meshes
+let lightBound0Mesh = new THREE.Mesh( pointGeometry, new THREE.MeshBasicMaterial({color:0x000000}) );
+scene.add(lightBound0Mesh);
+let light0Mesh = new THREE.Mesh( pointGeometry, new THREE.MeshBasicMaterial({color:0x0000FF}) );
+scene.add(light0Mesh);
+let light1Mesh = new THREE.Mesh( pointGeometry, new THREE.MeshBasicMaterial({color:0xFF0000}) );
+scene.add(light1Mesh);
+let lightBound1Mesh = new THREE.Mesh( pointGeometry, new THREE.MeshBasicMaterial({color:0x000000}) );
+scene.add(lightBound1Mesh);
+
+let lightLine = new THREE.Line( 
+	new THREE.BufferGeometry().setFromPoints( linePoints ), new THREE.MeshBasicMaterial({color:0x000000}) );
+scene.add( lightLine );
 
 // set of points along XY-plane
 let polygonPointArray1 = [
@@ -383,7 +395,7 @@ console.log(result3);
 */
 
 let GUI = lil.GUI;
-let gui = new GUI();
+let gui = new GUI( { width: 400 } );
 
 let guiParams = { 
 	ceilingY: 5.01, 
@@ -409,16 +421,16 @@ guiParams.changeParam = function()
 
 	// extend lines beyond extreme point
 	let m1 = new THREE.Vector3().subVectors(p1, p0);
-	p1 = new THREE.Vector3().addVectors( p0, m1.multiplyScalar(10) );
+	let p1b = new THREE.Vector3().addVectors( p0, m1.multiplyScalar(10) );
 	let m2 = new THREE.Vector3().subVectors(p2, p0);
-	p2 = new THREE.Vector3().addVectors( p0, m2.multiplyScalar(10) );
+	let p2b = new THREE.Vector3().addVectors( p0, m2.multiplyScalar(10) );
 	
 	// update ceiling line graphics
 	posAtt1.setXYZ(0, p0.x, p0.y, p0.z);
-	posAtt1.setXYZ(1, p1.x, p1.y, p1.z);
+	posAtt1.setXYZ(1, p1b.x, p1b.y, p1b.z);
 	posAtt1.needsUpdate = true;
 	posAtt2.setXYZ(0, p0.x, p0.y, p0.z);
-	posAtt2.setXYZ(1, p2.x, p2.y, p2.z);
+	posAtt2.setXYZ(1, p2b.x, p2b.y, p2b.z);
 	posAtt2.needsUpdate = true;
 
 	// update ceiling plane graphics
@@ -438,33 +450,56 @@ guiParams.changeParam = function()
 
 	// floor point calculations 
 	let yAxisNeg = new THREE.Vector3(0,-1,0);
-	p0 = new THREE.Vector3(0, guiParams.floorY, 0);
-	p1 = findExtremePoint(p0, polygonPointArray1, yAxisNeg);
-	p2 = findExtremePoint(p0, polygonPointArray2, yAxisNeg);
+	let q0 = new THREE.Vector3(0, guiParams.floorY, 0);
+	let q1 = findExtremePoint(q0, polygonPointArray1, yAxisNeg);
+	let q2 = findExtremePoint(q0, polygonPointArray2, yAxisNeg);
 
 	// extend lines beyond extreme point
-	m1 = new THREE.Vector3().subVectors(p1, p0);
-	p1 = new THREE.Vector3().addVectors( p0, m1.multiplyScalar(10) );
-	m2 = new THREE.Vector3().subVectors(p2, p0);
-	p2 = new THREE.Vector3().addVectors( p0, m2.multiplyScalar(10) );
+	m1 = new THREE.Vector3().subVectors( q1, q0 );
+	let q1b = new THREE.Vector3().addVectors( q0, m1.multiplyScalar(10) );
+	m2 = new THREE.Vector3().subVectors( q2, q0 );
+	let q2b = new THREE.Vector3().addVectors( q0, m2.multiplyScalar(10) );
 	
 	// update floor line graphics
-	posAtt1.setXYZ(0, p0.x, p0.y, p0.z);
-	posAtt1.setXYZ(1, p1.x, p1.y, p1.z);
+	posAtt1.setXYZ(0, q0.x, q0.y, q0.z);
+	posAtt1.setXYZ(1, q1b.x, q1b.y, q1b.z);
 	posAtt1.needsUpdate = true;
-	posAtt2.setXYZ(0, p0.x, p0.y, p0.z);
-	posAtt2.setXYZ(1, p2.x, p2.y, p2.z);
+	posAtt2.setXYZ(0, q0.x, q0.y, q0.z);
+	posAtt2.setXYZ(1, q2b.x, q2b.y, q2b.z);
 	posAtt2.needsUpdate = true;
 
 	// update floor plane graphics
-	v1 = new THREE.Vector3().subVectors(p1, p0);
-	v2 = new THREE.Vector3().subVectors(p2, p0);
-	n = new THREE.Vector3().crossVectors(v1, v2).normalize();
-	d = n.dot(p0);
+	let w1 = new THREE.Vector3().subVectors(q1, q0);
+	let w2 = new THREE.Vector3().subVectors(q2, q0);
+	n = new THREE.Vector3().crossVectors(w1, w2).normalize();
+	d = n.dot(q0);
 	floorGridHelper.position.set(0,0,0);
 	floorGridHelper.lookAt( n );
 	floorGridHelper.translateZ( d );
 	floorGridHelper.visible = guiParams.floorVisible;
+
+	// update light boundaries and light line
+	let line1 = pointsToLine(p0, p1);
+	let line2 = pointsToLine(q0, q1);
+	let int12 = lineLineIntersection(line1, line2);
+	let line3 = pointsToLine(p0, p2);
+	let line4 = pointsToLine(q0, q2);
+	let int34 = lineLineIntersection(line3, line4);
+	lightBound0Mesh.position.copy( int12 );
+	lightBound1Mesh.position.copy( int34 );
+
+	posAtt1 = lightLine.geometry.getAttribute('position');
+	posAtt1.setXYZ(0, int12.x, int12.y, int12.z);
+	posAtt1.setXYZ(1, int34.x, int34.y, int34.z);
+	posAtt1.needsUpdate = true;
+
+	// update light position meshes
+	let m = new THREE.Vector3().subVectors(int12, int34);
+	let light0Pos = int34.clone().add( m.clone().multiplyScalar(guiParams.light1Percent) );
+	light0Mesh.position.copy(light0Pos);
+	let light1Pos = int34.clone().add( m.clone().multiplyScalar(guiParams.light2Percent) );
+	light1Mesh.position.copy(light1Pos);
+	
 }
 
 // call it once.
