@@ -82,55 +82,81 @@ window.addEventListener( 'resize', onWindowResize );
 const axesHelper = new THREE.AxesHelper( 5 );
 scene.add( axesHelper );
 
-let gridSize = 12;
-let gridDivisions = 10;
-let gridCenterColor = 0xFF0000;
-let gridLineColor = 0x000000;
-let gridHelper = new THREE.GridHelper( gridSize, gridDivisions, gridCenterColor, gridLineColor );
-// scene.add( gridHelper );
 
-let floorGeometry = new THREE.PlaneGeometry(gridSize, gridSize);
-let floorMaterial = new THREE.MeshBasicMaterial({ color: 0xDDFFDD, side: THREE.DoubleSide });
-let floor = new THREE.Mesh(floorGeometry, floorMaterial);
-floor.rotation.x = -Math.PI / 2;
-scene.add(floor);
-// shadow code
-floor.receiveShadow = true;
+let planeSize = 6;
+let wallGeom = new THREE.PlaneGeometry(planeSize, planeSize);
+let wallTransparent = true;
 
-/*
-// cone parameters: radius, height, segments (~32 for circle)
-let geometry = new THREE.ConeGeometry( 0.5, 1, 32 );
-let material = new THREE.MeshLambertMaterial( { color: 0x888888 } );
-let mesh = new THREE.Mesh( geometry, material );
-// position refers to center
-mesh.position.set(2, 1, 2);
-mesh.castShadow = true;
-scene.add( mesh );
-*/
+// wall* is the wall perpendicular to the *-axis
 
-let wallGeoZ = new THREE.PlaneGeometry(6,6);
-let wallZ = new THREE.Mesh( wallGeoZ, new THREE.MeshBasicMaterial({ color: 0xDDDDFF, side: THREE.DoubleSide, transparent:true, opacity:0.5 }) );
-wallZ.position.set(3, 3, 0);
-wallZ.receiveShadow = true;
-scene.add(wallZ);
-
-let wallGeoX = new THREE.PlaneGeometry(6,6);
-let wallX = new THREE.Mesh( wallGeoX, new THREE.MeshBasicMaterial({ color: 0xFFDDDD, side: THREE.DoubleSide, transparent:true, opacity:0.5 }) );
+let wallX = new THREE.Mesh( wallGeom, new THREE.MeshBasicMaterial(
+	{ color: 0xFFDDDD, side: THREE.DoubleSide, transparent:wallTransparent, opacity:0.5 }) );
 wallX.position.set(0, 3, 3);
 wallX.rotation.y = Math.PI/2;
-wallX.receiveShadow = true;
+// wallX.receiveShadow = true;
 scene.add(wallX);
 
-let zPoint = new THREE.Mesh( 
-	new THREE.SphereGeometry( 0.1 ),
-	new THREE.MeshBasicMaterial( {color: 0x444444} )
-);
-scene.add(zPoint);
-zPoint.position.set(0, 1, 0);
+let wallY = new THREE.Mesh( wallGeom, new THREE.MeshBasicMaterial(
+	{ color: 0xDDFFDD, side: THREE.DoubleSide, transparent:wallTransparent, opacity:0.5 }) );
+wallY.scale.multiplyScalar(2);
+wallY.rotation.x = -Math.PI / 2;
+// wallY.receiveShadow = true;
+scene.add(wallY);
 
+let wallZ = new THREE.Mesh( wallGeom, new THREE.MeshBasicMaterial(
+	{ color: 0xDDDDFF, side: THREE.DoubleSide, transparent:wallTransparent, opacity:0.5 }) );
+wallZ.position.set(3, 3, 0);
+// wallZ.receiveShadow = true;
+scene.add(wallZ);
+
+
+let pointGeometry = new THREE.SphereGeometry( 0.1 );
+let ceilingColor = 0xCC9900;
+let ceilingPointMaterial = new THREE.MeshBasicMaterial( {color: ceilingColor} );
+let ceilingLineMaterial  = new THREE.LineBasicMaterial( {color: ceilingColor} );
+let floorColor = 0x006600;
+let floorPointMaterial = new THREE.MeshBasicMaterial( {color: floorColor} );
+let floorLineMaterial  = new THREE.LineBasicMaterial( {color: floorColor} );
+
+let ceilingPointMesh = new THREE.Mesh( pointGeometry, ceilingPointMaterial );
+scene.add(ceilingPointMesh);
+ceilingPointMesh.position.set(0, 5, 0);
+
+let floorPointMesh = new THREE.Mesh( pointGeometry, floorPointMaterial );
+scene.add(floorPointMesh);
+floorPointMesh.position.set(0, -1, 0);
+
+let linePoints = [ new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0) ];
+
+let ceilingLine1 = new THREE.Line( new THREE.BufferGeometry().setFromPoints( linePoints ), ceilingLineMaterial );
+scene.add( ceilingLine1 );
+let ceilingLine2 = new THREE.Line( new THREE.BufferGeometry().setFromPoints( linePoints ), ceilingLineMaterial );
+scene.add( ceilingLine2 );
+
+let floorLine1 = new THREE.Line( new THREE.BufferGeometry().setFromPoints( linePoints ), floorLineMaterial );
+scene.add( floorLine1 );
+let floorLine2 = new THREE.Line( new THREE.BufferGeometry().setFromPoints( linePoints ), floorLineMaterial );
+scene.add( floorLine2 );
+
+let gridSize = 20;
+let gridDivisions = 4 * gridSize;
+
+let ceilingGridHelper = new THREE.GridHelper( gridSize, gridDivisions, ceilingColor, ceilingColor );
+ceilingGridHelper.geometry.rotateX( Math.PI / 2 );
+ceilingGridHelper.material.transparent = true;
+ceilingGridHelper.material.opacity = 0.4;
+scene.add( ceilingGridHelper );
+ceilingGridHelper.lookAt( new THREE.Vector3(0,1,0) );
+
+let floorGridHelper = new THREE.GridHelper( gridSize, gridDivisions, floorColor, floorColor );
+floorGridHelper.geometry.rotateX( Math.PI / 2 );
+floorGridHelper.material.transparent = true;
+floorGridHelper.material.opacity = 0.4;
+scene.add( floorGridHelper );
+floorGridHelper.lookAt( new THREE.Vector3(0,1,0) );
 
 // set of points along XY-plane
-let polygonPointArray = [
+let polygonPointArray1 = [
 	new THREE.Vector3(3,4,0),
 	new THREE.Vector3(1,3,0),
 	new THREE.Vector3(2,1,0),
@@ -148,6 +174,10 @@ let polygonPointArray2 = [
 	new THREE.Vector3(0,0,5)
 ];
 
+// turn points into a loop
+polygonPointArray1.push( polygonPointArray1[0] );
+polygonPointArray2.push( polygonPointArray2[0] );
+
 function graphPolygon( pointArray, polygonColor=0x000000)
 {
 	// graph polygon points
@@ -161,9 +191,6 @@ function graphPolygon( pointArray, polygonColor=0x000000)
 		scene.add(point);
 	}
 
-	// turn into a loop
-	pointArray.push( pointArray[0] );
-
 	// graph polygon lines
 	let polygonLines = new THREE.Line( 
 		new THREE.BufferGeometry().setFromPoints( pointArray ), 
@@ -172,32 +199,20 @@ function graphPolygon( pointArray, polygonColor=0x000000)
 	scene.add( polygonLines );
 }
 
-graphPolygon( polygonPointArray, 0x000088 );
+graphPolygon( polygonPointArray1, 0x000088 );
 graphPolygon( polygonPointArray2, 0x880000 );
 
+// MATH FUNCTIONS =====================================================
 
-let linePoints = [ new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0) ];
-let ceilingLine = new THREE.Line(
-	new THREE.BufferGeometry().setFromPoints( linePoints ), 
-	new THREE.LineBasicMaterial( {color: 0x000044} )
-);
-scene.add( ceilingLine );
-
-let ceilingLine2 = new THREE.Line(
-	new THREE.BufferGeometry().setFromPoints( linePoints ), 
-	new THREE.LineBasicMaterial( {color: 0x440000} )
-);
-scene.add( ceilingLine2 );
-
-// params: line1, line2 = {slopeVec, pointVec}
+// params: line1, line2 = {slope, point}
 // returns: {point1, point2}
 //   where pointN is the point on lineN closest to the other line.
-function closestPoints(line1, line2, debug=false)
+function closestPointsOnLines(line1, line2, debug=false)
 {
 	// line1: L1(t) = m1*t + p1
 	// line2: L2(u) = m2*u + p2
-	let m1 = line1.slopeVec, p1 = line1.pointVec;
-	let m2 = line2.slopeVec, p2 = line2.pointVec;
+	let m1 = line1.slope, p1 = line1.point;
+	let m2 = line2.slope, p2 = line2.point;
 
 	let n = new THREE.Vector3().crossVectors(m1, m2);
 	// TODO: if n = <0,0,0> then lines are parallel, no unique solution exists - return null?
@@ -214,18 +229,11 @@ function closestPoints(line1, line2, debug=false)
 	return {point1: c1, point2: c2};
 }
 
-// params: line1, line2 = {slopeVec, pointVec}
+// params: line1, line2 = {slope, point}
 // returns: point of intersection, if closest points are within epsilon of each other
-function lineLineIntersection(line1, line2, epsilon=0.01, debug=false)
+function lineLineIntersection(line1, line2, epsilon=0.01)
 {
-	if (debug)
-	{
-		console.log("lines")
-		console.log(line1)
-		console.log(line2)
-	}
-
-	let closest = closestPoints(line1, line2);
+	let closest = closestPointsOnLines(line1, line2);
 
 	// if lines are parallel, there is no unique pair of closest points
 	//   and this computation is meaningless
@@ -236,206 +244,256 @@ function lineLineIntersection(line1, line2, epsilon=0.01, debug=false)
 
 	// console.log(d)
 
+	// if points are close enough, return midpoint of closest points
 	if ( d < epsilon )
-	{
-		let midpoint = new THREE.Vector3().addVectors(closest.point1, closest.point2).multiplyScalar(0.5);
-		return midpoint;
-	}
+		return new THREE.Vector3().addVectors(closest.point1, closest.point2).multiplyScalar(0.5);
 	else
-	{
 		return null;
-	}
 }
 
-// calculate intersection (if any) of parametrically defined line segments
-// line1, line2 = {slopeVec, pointVec, paramMin, paramMax}
-function intersection(line1, line2, debug=false)
+// params: point = THREE.Vector3, line = {slope, point}
+function distanceFromPointToLine(point, line)
 {
-	if (debug)
-	{
-		console.log("lines")
-		console.log(line1)
-		console.log(line2)
-	}
-
-	// line1: L(t) = mt + p
-	// line2: K(u) = nu + q
-	let m = line1.slopeVec, p = line1.pointVec, tMin = line1.paramMin, tMax = line1.paramMax;
-	let n = line2.slopeVec, q = line2.pointVec, uMin = line2.paramMin, uMax = line2.paramMax;
-	// cramer's rule
-	let detA = -m.x * n.y + m.y * n.x;
-
-	if (debug)
-		console.log("detA: " + detA)
-	if (detA == 0)
-		return null;
-	
-	let detA1b = -(q.x - p.x) * n.y + (q.y - p.y) * n.x;
-	let t = detA1b / detA;
-
-	if (debug)
-		console.log( "t: " + t )
-
-	if ( !(tMin <= t && t <= tMax) )
-		return null;
-	
-	let detA2b = -m.x * (q.y - p.y) + m.y * (q.x - p.x);
-	let u = detA2b / detA;
-
-	if (debug)
-		console.log( "u: " + u)
-
-	if ( !(uMin <= u && u <= uMax))
-		return null;
-
-	let e = (m.z * t + p.z) - (n.z * u + q.z);
-	if (!(e < 0.001))
-		return null;
-
-	return new THREE.Vector3( m.x * t + p.x, m.y * t + p.y, m.z * t + p.z)
+	let v = new THREE.Vector3().subVectors(point, line.point);
+	let m = line.slope;
+	let component = v.dot(m) / m.length();
+	let orthoComponent = Math.sqrt( v.lengthSq() - component*component );
+	return orthoComponent;
 }
 
+function pointsToSegment(pointA, pointB)
+{
+	return { "pointA": pointA, "pointB": pointB };
+}
 
+function pointsToLine(pointA, pointB)
+{
+	return {
+		point: new THREE.Vector3().copy( pointA ),
+		slope: new THREE.Vector3().subVectors( pointB, pointA )
+	}
+}
+
+function segmentToLine(segment)
+{
+	return pointsToLine( segment.pointA, segment.pointB );
+}
+
+// could also create lineToSegment, lineToPoints, etc.
+
+// params: point = THREE.Vector3, segment = {pointA, pointB}
+function isPointOnSegment(point, segment, epsilon=0.01)
+{
+	let AP = new THREE.Vector3().subVectors(point, segment.pointA);
+	let AB = new THREE.Vector3().subVectors(segment.pointB, segment.pointA);
+	// projection scale factor
+	let value = AP.dot(AB) / AB.dot(AB);
+	let line = segmentToLine(segment);
+	let distance = distanceFromPointToLine(point, line);
+	return (0 <= value && value <= 1 && Math.abs(distance) <= epsilon);
+}
+
+// param: segment = {pointA, pointB}
+function segmentSegmentIntersection(segment1, segment2)
+{
+	let line1 = segmentToLine(segment1);
+	let line2 = segmentToLine(segment2);
+
+	let point = lineLineIntersection(line1, line2);
+	if (point == null)
+		return null;
+
+	if ( isPointOnSegment(point, segment1) && isPointOnSegment(point, segment2) )
+		return point;
+	else
+		return null;
+}
+
+function lineSegmentIntersection(line, segment)
+{
+	let line2 = segmentToLine(segment);
+
+	let point = lineLineIntersection(line, line2);
+	if (point == null)
+		return null;
+
+	if ( isPointOnSegment(point, segment) )
+		return point;
+	else
+		return null;
+}
+
+// returns the point P such that the line from linePoint (e.g. ceilingPoint or floorPoint) to P (in polygonPointArray)
+//  does not intersect the interior of the polygonal region with vertices from polygonPointArray
+//  and the angle between line.slope and dirVector is minimized 
+function findExtremePoint(linePoint, polygonPointArray, dirVector)
+{
+	let minAngle = null;
+	let minAnglePoint = null;
+	for (let pointIndex = 0; pointIndex < polygonPointArray.length - 1; pointIndex++)
+	{
+		let polygonPoint = polygonPointArray[pointIndex];
+		let line = pointsToLine(linePoint, polygonPoint);
+		let intersectPolygonInterior = false;
+
+		for (let segmentIndex = 0; segmentIndex < polygonPointArray.length - 1; segmentIndex++)
+		{
+			let segment = pointsToSegment( 
+				polygonPointArray[segmentIndex], polygonPointArray[segmentIndex+1] );
+			let intersectionPoint = lineSegmentIntersection(line, segment);
+			if (intersectionPoint != null && intersectionPoint.distanceTo(polygonPoint) > 0.001)
+				intersectPolygonInterior = true;
+		}
+		
+		if (!intersectPolygonInterior)
+		{
+			let angle = dirVector.angleTo(line.slope);
+			if (minAngle == null || angle < minAngle)
+			{
+				minAngle = angle;
+				minAnglePoint = polygonPoint;
+			}
+		}
+	}
+
+	return minAnglePoint;
+}
+
+/*
+// testing
+
+let result = closestPointsOnLines( 
+	{slope: new THREE.Vector3(2,0,0), point: new THREE.Vector3(0,2,1)},
+	{slope: new THREE.Vector3(0,0,-1), point: new THREE.Vector3(1,2.01,0)}
+);
+
+let result2 = lineLineIntersection( 
+	{slope: new THREE.Vector3(2,0,0), point: new THREE.Vector3(0,2,1)},
+	{slope: new THREE.Vector3(0,0,-1), point: new THREE.Vector3(1,2.01,0)},
+	0.01
+);
+
+let result3 = isPointOnSegment(
+	new THREE.Vector3(1, 0.01, 0),
+	{pointA: new THREE.Vector3(0,0,0), pointB: new THREE.Vector3(2,0,0) }
+);
+
+console.log("results:");
+console.log(result3);
+*/
 
 let GUI = lil.GUI;
 let gui = new GUI();
 
 let guiParams = { 
-	ceilingY: 1.0, 
-	slopeAngle: 0.0, 
+	ceilingY: 5.01, 
+	floorY:   -1.0, 
+	ceilingVisible: true,
+	floorVisible: true,
+	light1Percent: 0.2,
+	light2Percent: 0.8
 };
 
 guiParams.changeParam = function()
 {
-	zPoint.position.set(0, guiParams.ceilingY, 0);
-    let posAtt = ceilingLine.geometry.getAttribute('position');
+	// ceiling point
+	ceilingPointMesh.position.set(0, guiParams.ceilingY, 0);
+    let posAtt1 = ceilingLine1.geometry.getAttribute('position');
 	let posAtt2 = ceilingLine2.geometry.getAttribute('position');
 
-	let p = new THREE.Vector3(0, guiParams.ceilingY, 0);
+	// ceiling point calculations 
+	let p0 = new THREE.Vector3(0, guiParams.ceilingY, 0);
+	let yAxisPos = new THREE.Vector3(0,1,0);
+	let p1 = findExtremePoint(p0, polygonPointArray1, yAxisPos);
+	let p2 = findExtremePoint(p0, polygonPointArray2, yAxisPos);
 
-	/*
-	// use if not recalculating automatically
-	let m = new THREE.Vector3(Math.cos(guiParams.slopeAngle), Math.sin(guiParams.slopeAngle), 0);
-	m.multiplyScalar( 6 );
+	// extend lines beyond extreme point
+	let m1 = new THREE.Vector3().subVectors(p1, p0);
+	p1 = new THREE.Vector3().addVectors( p0, m1.multiplyScalar(10) );
+	let m2 = new THREE.Vector3().subVectors(p2, p0);
+	p2 = new THREE.Vector3().addVectors( p0, m2.multiplyScalar(10) );
+	
+	// update ceiling line graphics
+	posAtt1.setXYZ(0, p0.x, p0.y, p0.z);
+	posAtt1.setXYZ(1, p1.x, p1.y, p1.z);
+	posAtt1.needsUpdate = true;
+	posAtt2.setXYZ(0, p0.x, p0.y, p0.z);
+	posAtt2.setXYZ(1, p2.x, p2.y, p2.z);
+	posAtt2.needsUpdate = true;
 
-	posAtt.setXYZ(0, p.x, p.y, p.z);
-	posAtt.setXYZ(1, p.x + m.x, p.y + m.y, p.z + m.z);
-	posAtt.needsUpdate = true;
-	*/
+	// update ceiling plane graphics
+	let v1 = new THREE.Vector3().subVectors(p1, p0);
+	let v2 = new THREE.Vector3().subVectors(p2, p0);
+	let n = new THREE.Vector3().crossVectors(v1, v2).normalize();
+	let d = n.dot(p0);
+	ceilingGridHelper.position.set(0,0,0);
+	ceilingGridHelper.lookAt( n );
+	ceilingGridHelper.translateZ( d );
+	ceilingGridHelper.visible = guiParams.ceilingVisible;
 
-	/*
-	for (let i = 0; i < polygonPointArray.length - 1; i++)
-	{
-		let q = polygonPointArray[i];
-		let q1 = polygonPointArray[i+1];
-		let n = new THREE.Vector3().subVectors(q, q1);
-		
-		let intersectionPoint = intersection(
-			{slopeVec:m, pointVec:p, paramMin:0, paramMax:1},
-			{slopeVec:n, pointVec:q, paramMin:0, paramMax:1},
-		);
-		
-		
-		if (intersectionPoint != null)
-		{
-			console.log( "intersect segment " + i + " at " );
-			console.log( intersectionPoint );
-		}
-		
-	}
-	*/
+	// floor point
+	floorPointMesh.position.set(0, guiParams.floorY, 0);
+    posAtt1 = floorLine1.geometry.getAttribute('position');
+	posAtt2 = floorLine2.geometry.getAttribute('position');
 
-	let slopeAngle = findCeilingSlope();
-	let slopeAngle2 = findCeilingSlope2();
-	console.log(slopeAngle2)
-	// console.log(slopeAngle);
-	if (true)
-	{
-		let m = new THREE.Vector3(Math.cos(slopeAngle), Math.sin(slopeAngle), 0);
-		m.multiplyScalar( 10 );
+	// floor point calculations 
+	let yAxisNeg = new THREE.Vector3(0,-1,0);
+	p0 = new THREE.Vector3(0, guiParams.floorY, 0);
+	p1 = findExtremePoint(p0, polygonPointArray1, yAxisNeg);
+	p2 = findExtremePoint(p0, polygonPointArray2, yAxisNeg);
 
-		posAtt.setXYZ(0, p.x, p.y, p.z);
-		posAtt.setXYZ(1, p.x + m.x, p.y + m.y, p.z + m.z);
-		posAtt.needsUpdate = true;
+	// extend lines beyond extreme point
+	m1 = new THREE.Vector3().subVectors(p1, p0);
+	p1 = new THREE.Vector3().addVectors( p0, m1.multiplyScalar(10) );
+	m2 = new THREE.Vector3().subVectors(p2, p0);
+	p2 = new THREE.Vector3().addVectors( p0, m2.multiplyScalar(10) );
+	
+	// update floor line graphics
+	posAtt1.setXYZ(0, p0.x, p0.y, p0.z);
+	posAtt1.setXYZ(1, p1.x, p1.y, p1.z);
+	posAtt1.needsUpdate = true;
+	posAtt2.setXYZ(0, p0.x, p0.y, p0.z);
+	posAtt2.setXYZ(1, p2.x, p2.y, p2.z);
+	posAtt2.needsUpdate = true;
 
-		let m2 = new THREE.Vector3(0, Math.sin(slopeAngle2), Math.cos(slopeAngle2));
-		m2.multiplyScalar( 10 );
-
-		posAtt2.setXYZ(0, p.x, p.y, p.z);
-		posAtt2.setXYZ(1, p.x + m2.x, p.y + m2.y, p.z + m2.z);
-		posAtt2.needsUpdate = true;
-
-	}
+	// update floor plane graphics
+	v1 = new THREE.Vector3().subVectors(p1, p0);
+	v2 = new THREE.Vector3().subVectors(p2, p0);
+	n = new THREE.Vector3().crossVectors(v1, v2).normalize();
+	d = n.dot(p0);
+	floorGridHelper.position.set(0,0,0);
+	floorGridHelper.lookAt( n );
+	floorGridHelper.translateZ( d );
+	floorGridHelper.visible = guiParams.floorVisible;
 }
 
-function checkForIntersection(p, m, pointArray, debug=false)
-{
-	for (let i = 0; i < pointArray.length - 1; i++)
-	{
-		let q = pointArray[i];
-		let q1 = pointArray[i+1];
-		let n = new THREE.Vector3().subVectors(q, q1);
-		
-		let intersectionPoint = intersection(
-			{slopeVec:m, pointVec:p, paramMin:0, paramMax:1},
-			{slopeVec:n, pointVec:q, paramMin:0, paramMax:1},
-			debug
-		);
-		
-		// console.log(intersectionPoint)
-		if (intersectionPoint != null)
-			return intersectionPoint;
-	}
-
-	return null;
-}
-
-function findCeilingSlope()
-{
-	let delta = 0.01;
-	for (let slopeAngle = 1.57; slopeAngle >= -1.57; slopeAngle -= delta)
-	{
-		let p = new THREE.Vector3(0, guiParams.ceilingY, 0);
-		let m = new THREE.Vector3(Math.cos(slopeAngle), Math.sin(slopeAngle), 0);
-		m.multiplyScalar( 10 );
-		
-		let intersectionData = checkForIntersection(p, m, polygonPointArray);
-		if (intersectionData != null)
-			return slopeAngle + delta;
-	}
-
-	return null;
-}
-
-function findCeilingSlope2()
-{
-	console.log("find slope 2")
-	let delta = 0.01;
-	for (let slopeAngle = 1.57; slopeAngle >= -1.57; slopeAngle -= delta)
-	{
-		let p = new THREE.Vector3(0, guiParams.ceilingY, 0);
-		let m = new THREE.Vector3(0, Math.sin(slopeAngle), Math.cos(slopeAngle));
-		m.multiplyScalar( 10 );
-		console.log(m)
-		let intersectionData = checkForIntersection(p, m, polygonPointArray2, false);
-		if (intersectionData != null)
-			return slopeAngle + delta;
-	}
-
-	return null;
-}
-
+// call it once.
+guiParams.changeParam();
 
 // adding a slider
 gui.add( guiParams, 'ceilingY', 0.0, 6.0, 0.01)
-	  .name("ceiling Y")
-	  .onChange( guiParams.changeParam );
+	.name("ceiling Y")
+	.onChange( guiParams.changeParam );
 
-gui.add( guiParams, 'slopeAngle', -1.57, 1.57, 0.01)
-	  .name("slope angle")
-	  .onChange( guiParams.changeParam );
+gui.add( guiParams, 'floorY', -6, 3, 0.01)
+	.name("floor Y")
+	.onChange( guiParams.changeParam );
 
+gui.add( guiParams, 'ceilingVisible')
+	.name("ceiling visible")
+	.onChange( guiParams.changeParam );
 
+gui.add( guiParams, 'floorVisible')
+	.name("floor visible")
+	.onChange( guiParams.changeParam );
+
+gui.add( guiParams, 'light1Percent', 0, 1, 0.01)
+	.name("light 1 %")
+	.onChange( guiParams.changeParam );
+
+gui.add( guiParams, 'light2Percent', 0, 1, 0.01)
+	.name("light 2 %")
+	.onChange( guiParams.changeParam );
 
 function update()
 {
