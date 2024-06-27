@@ -149,6 +149,8 @@ CSG.Plane = class
 
     flip() 
     {
+        // debug here - seems that a THREE.Vector3 is getting passed in?
+        console.log(this.normal)
         this.normal.mult(-1);
         this.d *= -1;
     }

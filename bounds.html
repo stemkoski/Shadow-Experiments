@@ -518,11 +518,25 @@ guiParams.changeParam = function()
 	{
 		pyramid1Mesh.parent.remove(pyramid1Mesh); 
 		pyramid1Mesh.geometry.dispose();
+		pyramid2Mesh.parent.remove(pyramid2Mesh); 
+		pyramid2Mesh.geometry.dispose();
+		//pyramid12Mesh.parent.remove(pyramid12Mesh); 
+		//pyramid12Mesh.geometry.dispose();
 	}
 
 	pyramid1CSG = CSG.createPyramidGeneral( light0Mesh.position.clone(), polygonPointArray1Original );
     pyramid1Mesh = new THREE.Mesh( pyramid1CSG.toMeshGeometry(), normalMaterial );
+	//pyramid1Mesh.visible = false;
     scene.add( pyramid1Mesh );
+
+	pyramid2CSG = CSG.createPyramidGeneral( light1Mesh.position.clone(), polygonPointArray2Original );
+    pyramid2Mesh = new THREE.Mesh( pyramid2CSG.toMeshGeometry(), normalMaterial );
+	//pyramid2Mesh.visible = false;
+    scene.add( pyramid2Mesh );
+
+	//pyramid12CSG = pyramid1CSG.intersect(pyramid2CSG);
+	//pyramid12Mesh = new THREE.Mesh( pyramid12CSG.toMeshGeometry(), normalMaterial );
+    //scene.add(pyramid12Mesh);
 }
 
 // call it once.
