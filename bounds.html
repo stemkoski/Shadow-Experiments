@@ -16,6 +16,7 @@
 <script src="js/OrbitControls.js"></script>
 <script src="js/Stats.js"></script>
 <script src="js/lil-gui.js"></script>
+<script src="js/csg-lib-new.js"></script>
 
 <script>
 
@@ -186,9 +187,21 @@ let polygonPointArray2 = [
 	new THREE.Vector3(0,0,5)
 ];
 
+// create shallow copies of original arrays for CSG use later
+let polygonPointArray1Original = [...polygonPointArray1];
+let polygonPointArray2Original = [...polygonPointArray2];
+
+
+// initialize pyramid related variables for global scope
+var pyramid1CSG = null, pyramid2CSG = null, pyramid12CSG = null; 
+var pyramid1Mesh = null, pyramid2Mesh = null, pyramid12Mesh = null; 
+let pyramidMaterial;
+let normalMaterial = new THREE.MeshNormalMaterial();
+
 // turn points into a loop
 polygonPointArray1.push( polygonPointArray1[0] );
 polygonPointArray2.push( polygonPointArray2[0] );
+
 
 function graphPolygon( pointArray, polygonColor=0x000000)
 {
@@ -500,6 +513,16 @@ guiParams.changeParam = function()
 	let light1Pos = int34.clone().add( m.clone().multiplyScalar(guiParams.light2Percent) );
 	light1Mesh.position.copy(light1Pos);
 	
+	// update pyramid meshes
+	if (pyramid1Mesh != null)
+	{
+		pyramid1Mesh.parent.remove(pyramid1Mesh); 
+		pyramid1Mesh.geometry.dispose();
+	}
+
+	pyramid1CSG = CSG.createPyramidGeneral( light0Mesh.position.clone(), polygonPointArray1Original );
+    pyramid1Mesh = new THREE.Mesh( pyramid1CSG.toMeshGeometry(), normalMaterial );
+    scene.add( pyramid1Mesh );
 }
 
 // call it once.
